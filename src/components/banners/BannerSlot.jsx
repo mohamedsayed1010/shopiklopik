@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useContext, useMemo } from "react";
 
+import { AuthContext } from "../../context/AuthContext";
 import BannerCard from "./BannerCard";
 import {
   BANNER_FRAME,
@@ -28,10 +29,17 @@ export default function BannerSlot({
     subCategoryId,
   });
 
+  const { token } = useContext(AuthContext);
+
+  /* `/banner-bookings/availability` is an authenticated endpoint: it answers
+     401 without a session. Asking anyway would spend a request to be refused
+     on a page that is public, so it is only asked when there is someone to
+     ask for. */
   const availabilityQuery = useBannerAvailability({
     location: placement?.location,
     categoryId,
     subCategoryId,
+    enabled: Boolean(token),
   });
 
   const published = useMemo(() => orderBannersForSession(banners), [banners]);
@@ -42,7 +50,14 @@ export default function BannerSlot({
 
   const availability = availabilityQuery.data?.data ?? null;
 
-  const hasFreeSlot = availability?.isAvailable === true;
+  /* Signed in, the server says whether the placement still has room. Signed
+     out it will not say, so the placement's own `isActive` stands in: a slot
+     that is live and carries nothing published is empty, which is exactly what
+     the promotional card offers. Keeping the card visible is the point — the
+     banner is public, and only the form behind it asks for an account. */
+  const hasFreeSlot = token
+    ? availability?.isAvailable === true
+    : placement?.isActive !== false;
 
   const promo =
     showCta && hasFreeSlot

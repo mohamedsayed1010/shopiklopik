@@ -52,11 +52,16 @@ function bookingRetry(failureCount, error) {
   return failureCount < 1;
 }
 
-export function useBannerAvailability({ location, categoryId, subCategoryId }) {
+export function useBannerAvailability({
+  location,
+  categoryId,
+  subCategoryId,
+  enabled = true,
+}) {
   return useQuery({
     queryKey: availabilityKey(location, categoryId, subCategoryId),
     queryFn: () => getBannerAvailability({ location, categoryId, subCategoryId }),
-    enabled: Boolean(location),
+    enabled: enabled && Boolean(location),
     staleTime: 1000 * 30,
     gcTime: 1000 * 60 * 5,
     retry: bookingRetry,

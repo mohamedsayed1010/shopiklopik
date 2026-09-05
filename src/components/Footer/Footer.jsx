@@ -1,11 +1,10 @@
-import { Fragment, useContext, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { MapPin, Phone, Mail } from "lucide-react";
 // Newsletter-only icons, restored with the section below:
 // import { Send, ShieldCheck } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa6";
 
-import { AuthContext } from "../../context/AuthContext";
 import BottomNav from "./BottomNav";
 import Logo from "../ui/Logo";
 import useSiteSettings from "../../hooks/useSiteSettings";
@@ -377,10 +376,6 @@ function DeveloperSignature({ name, phone, channel }) {
 }
 
 export default function Footer() {
-  const { token } = useContext(AuthContext);
-
-  /* Called before the early return, not after: hooks cannot be conditional,
-     and this one is a cache read for every viewer who is not an admin. */
   const { settings, socialLinks } = useSiteSettings();
 
   const contactItems = useMemo(() => {
@@ -418,8 +413,6 @@ export default function Footer() {
       },
     ].filter(Boolean);
   }, [settings]);
-
-  if (!token) return null;
 
   return (
     <>
