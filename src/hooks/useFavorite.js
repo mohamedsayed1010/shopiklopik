@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { addFavorite, removeFavorite } from "../api/advertisements/interactions";
 import { patchListingEverywhere } from "../utils/listingCache";
+import useRequireAuth from "./useRequireAuth";
 import useListingModuleType from "./useListingModuleType";
 import { FAVORITES_QUERY_KEY } from "./useFavorites";
 import { ADVERTISEMENT_ACTIONS_KEY } from "./useAdvertisementActions";
@@ -39,6 +40,10 @@ export default function useFavorite({
   favoriteCount: initialFavoriteCount = null,
 }) {
   const queryClient = useQueryClient();
+
+  /* Saving is an account action, and the hearts ride on cards that are now
+     public. Checked before the request, not after a 401. */
+  const { requireAuth } = useRequireAuth();
 
   /* Only consulted when the row itself did not name its module. */
   const { type: resolvedType, isResolved } = useListingModuleType(
@@ -87,6 +92,8 @@ export default function useFavorite({
   const toggle = useCallback(async () => {
     if (!canToggle || isPending) return null;
 
+    if (!requireAuth("سجّل دخولك لحفظ الإعلان في المفضلة")) return null;
+
     setIsPending(true);
 
     try {
@@ -132,7 +139,7 @@ export default function useFavorite({
     } finally {
       if (isMounted.current) setIsPending(false);
     }
-  }, [canToggle, isPending, isFavorite, id, moduleType, queryClient]);
+  }, [canToggle, isPending, requireAuth, isFavorite, id, moduleType, queryClient]);
 
   return { isFavorite, favoriteCount, toggle, isPending, canToggle };
 }

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { togglePostLike } from "../api/interactions/postInteractions";
 import { patchListingEverywhere } from "../utils/listingCache";
+import useRequireAuth from "./useRequireAuth";
 import { reportApiError } from "../utils/reportApiError";
 
 export default function usePostLike({
@@ -12,6 +13,10 @@ export default function usePostLike({
   likesCount = 0,
 } = {}) {
   const queryClient = useQueryClient();
+
+  /* These bars ride on cards in the public listing pages, so the button is on
+     screen for readers who have no session. */
+  const { requireAuth } = useRequireAuth();
 
   const apply = useCallback(
     (nextLiked, nextCount) =>
@@ -63,8 +68,12 @@ export default function usePostLike({
   const toggle = useCallback(() => {
     if (!collection || !postId || isPending) return;
 
+    /* Before `mutate`, so the optimistic count in `onMutate` never moves for a
+       request that was never going to be sent. */
+    if (!requireAuth("سجّل دخولك للتفاعل مع المنشور")) return;
+
     mutate();
-  }, [collection, postId, isPending, mutate]);
+  }, [collection, postId, isPending, requireAuth, mutate]);
 
   return { isPending, toggle };
 }

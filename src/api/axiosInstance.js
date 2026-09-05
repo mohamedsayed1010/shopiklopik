@@ -86,6 +86,19 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    /* No session at all — nothing to refresh and nothing to sign out of. A 401
+       here is the endpoint saying "this needs an account", which is a normal
+       answer on a public page: the marketplace is browsable signed out, and an
+       optional user-specific request must not be able to throw the reader onto
+       the login screen. The caller handles it; the page stays where it is. */
+    const hasSession =
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("refreshToken");
+
+    if (!hasSession) {
+      return Promise.reject(error);
+    }
+
     originalRequest._retry = true;
 
     // لو فيه Refresh شغال بالفعل

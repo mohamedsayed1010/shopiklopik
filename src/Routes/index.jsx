@@ -47,12 +47,19 @@ import NotFound from "../pages/NotFound";
 
 const routes = [
   {path: "", element: <Layout/>, children: [
-    {index: true, element: <ProtectedRoute><Home/></ProtectedRoute>},
+    /* Discovery is public: the home page, a category's subcategories and a
+       subcategory's listing rows. These are the pages a visitor — or a
+       crawler — must be able to read without an account, and every endpoint
+       behind them answers anonymously. Opening one ad is where the wall is. */
+    {index: true, element: <Home/>},
     {path:"create-product", element: <ProtectedRoute> <CreateAd/> </ProtectedRoute>},
     {path:"create-product/:categoryId", element: <ProtectedRoute> <CategoryDetails/> </ProtectedRoute>},
     {path:"create-product/:categoryId/:subCategoryId", element: <ProtectedRoute> <DynamicAdForm/> </ProtectedRoute>},
-    {path:"category/:categoryId", element: <ProtectedRoute> <SubCategories/> </ProtectedRoute>},
-    { path:"dynamic/:categoryId/:subCategoryId", element:<ProtectedRoute> <DynamicListPage/></ProtectedRoute>},
+    {path:"category/:categoryId", element: <SubCategories/>},
+    { path:"dynamic/:categoryId/:subCategoryId", element: <DynamicListPage/>},
+
+    /* The wall. A card is public; the ad behind it is not. `ProtectedRoute`
+       carries the address being asked for, so signing in lands back here. */
     {path: "dynamic/:categoryId/:subCategoryId/:id",element: <ProtectedRoute>  <DynamicDetailsPage/> </ProtectedRoute>},
 
     // Editing lives under the ad's own address rather than under

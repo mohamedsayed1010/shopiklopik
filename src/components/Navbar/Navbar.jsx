@@ -41,7 +41,7 @@ import useAdminAccess from "../../hooks/admin/useAdminPermissions";
 /** Only routes that actually exist — the drawer carries the rest. */
 const NAV_LINKS = [
   { to: "/", label: "الرئيسية", end: true },
-  { to: "/profile", label: "الملف الشخصي" },
+  { to: "/profile", label: "الملف الشخصي", authOnly: true },
 ];
 
 const ADMIN_LINKS = [
@@ -108,6 +108,11 @@ export default function Navbar() {
     canOpenRoute,
   } = useAdminAccess();
 
+  const navLinks = useMemo(
+    () => NAV_LINKS.filter((link) => !link.authOnly || token),
+    [token]
+  );
+
   const adminLinks = useMemo(
     () =>
       ADMIN_LINKS.filter((link) => {
@@ -164,10 +169,12 @@ export default function Navbar() {
             name={settings.siteName || undefined}
           />
 
-          {/* Desktop navigation */}
-          {token && (
+          {/* Desktop navigation. Shown to everyone now that the home page is
+              public — the account-only destinations drop out of the list
+              instead of the whole bar disappearing. */}
+          {navLinks.length > 0 && (
             <nav className="hidden items-center gap-1 lg:flex">
-              {NAV_LINKS.map((link) => (
+              {navLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
@@ -302,9 +309,9 @@ export default function Navbar() {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {token && (
-            <MenuItem icon={House} label="الرئيسية" to="/" onClick={closeDrawer} />
-          )}
+          {/* Public: the way back to the marketplace, for readers with an
+              account and readers without one alike. */}
+          <MenuItem icon={House} label="الرئيسية" to="/" onClick={closeDrawer} />
 
           {!token && (
             <>

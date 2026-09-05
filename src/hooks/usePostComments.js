@@ -11,6 +11,7 @@ import {
   getPostComments,
   updatePostComment,
 } from "../api/interactions/postInteractions";
+import useRequireAuth from "./useRequireAuth";
 
 /** Shared so every caller of one collection's comments agrees on one entry. */
 export const postCommentsKey = (collection, postId) => [
@@ -29,6 +30,11 @@ export default function usePostComments({
   enabled = false,
 } = {}) {
   const queryClient = useQueryClient();
+
+  /* Reading a thread is public; writing to one is not. Every mutation below
+     goes through this, so no comment request leaves the browser without a
+     session behind it — whichever surface opened the drawer. */
+  const { requireAuth } = useRequireAuth();
 
   const queryKey = postCommentsKey(collection, postId);
 
@@ -166,7 +172,7 @@ export default function usePostComments({
     [queryClient, queryKey]
   );
 
-  const { mutateAsync: submit, isPending: isSubmitting } = useMutation({
+  const { mutateAsync: submitComment, isPending: isSubmitting } = useMutation({
     mutationFn: (comment) => createPostComment(collection, postId, comment),
 
     onSuccess: (response) => {
@@ -177,7 +183,7 @@ export default function usePostComments({
   });
 
   const {
-    mutateAsync: update,
+    mutateAsync: updateComment,
     isPending: isUpdating,
     variables: updatingVariables,
   } = useMutation({
@@ -191,15 +197,37 @@ export default function usePostComments({
       replaceInCache(commentId, response?.data ?? { comment }),
   });
 
-  const { mutateAsync: remove, isPending: isDeleting, variables: deletingId } =
-    useMutation({
-      mutationFn: (commentId) =>
-        deletePostComment(collection, postId, commentId),
+  const {
+    mutateAsync: removeComment,
+    isPending: isDeleting,
+    variables: deletingId,
+  } = useMutation({
+    mutationFn: (commentId) => deletePostComment(collection, postId, commentId),
 
-      // The server has accepted it; drop it locally rather than refetching the
-      // whole thread and losing the reader's place in it.
-      onSuccess: (_response, commentId) => removeFromCache(commentId),
-    });
+    // The server has accepted it; drop it locally rather than refetching the
+    // whole thread and losing the reader's place in it.
+    onSuccess: (_response, commentId) => removeFromCache(commentId),
+  });
+
+  /* The gate, in front of all three. `null` means "not sent" — the reader is
+     on their way to the sign-in form and nothing was asked of the server. */
+  const submit = useCallback(
+    (comment) =>
+      requireAuth("سجّل دخولك للتعليق") ? submitComment(comment) : null,
+    [requireAuth, submitComment]
+  );
+
+  const update = useCallback(
+    (variables) =>
+      requireAuth("سجّل دخولك لتعديل تعليقك") ? updateComment(variables) : null,
+    [requireAuth, updateComment]
+  );
+
+  const remove = useCallback(
+    (commentId) =>
+      requireAuth("سجّل دخولك لحذف تعليقك") ? removeComment(commentId) : null,
+    [requireAuth, removeComment]
+  );
 
   return {
     comments,

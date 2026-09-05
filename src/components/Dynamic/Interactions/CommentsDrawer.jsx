@@ -264,7 +264,12 @@ export default function CommentsDrawer({
       setFormError("");
 
       try {
-        await submit(value);
+        /* `null` is the auth gate declining: nothing was sent and the reader is
+           being taken to the sign-in form, so the draft stays where it is
+           rather than being cleared as though it had posted. */
+        const created = await submit(value);
+
+        if (created === null) return;
 
         setDraft("");
         onCommentAdded?.();
