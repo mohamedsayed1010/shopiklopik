@@ -1,0 +1,35 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Local environment files. `.env.example` is committed as the template; the
+# real ones are not, so a deployment's API host never lands in the repository.
+.env
+.env.*
+!.env.example
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Agent worktrees: full checkouts of other branches, never part of a build.
+# Also keeps Tailwind auto-detection from compiling their classes into ours.
+.claude/worktrees/
+.claude/settings.local.json

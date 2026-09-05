@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/pwa-192.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#041B3D" />
+
+    <!--
+      Every tag below carries `data-rh` on purpose.
+
+      react-helmet-async marks the tags it manages with that attribute and
+      replaces them on render. A tag shipped here *without* it is invisible to
+      Helmet, so emitting the same tag from a component left two in the head —
+      with the static one first, and therefore the one a scraper reads. Marking
+      them makes these the values a no-JS crawler sees and the values Helmet
+      overwrites the moment the app renders a page.
+    -->
+    <meta
+      data-rh="true"
+      name="description"
+      content="شوبيك لوبيك - سوق الفيوم الإلكتروني. بيع واشترِ السيارات والعقارات والوظائف والخدمات داخل محافظة الفيوم بسهولة وأمان."
+    />
+
+    <meta data-rh="true" name="robots" content="index, follow" />
+
+    <!--
+      The share-preview floor. Facebook, WhatsApp and X do not run JavaScript,
+      so for them these site-level values are the preview for every address.
+      Per-page previews need pre-rendering, which this SPA does not do.
+    -->
+    <meta data-rh="true" property="og:type" content="website" />
+    <meta data-rh="true" property="og:site_name" content="شوبيك لوبيك" />
+    <meta data-rh="true" property="og:title" content="شوبيك لوبيك | سوق الفيوم الإلكتروني" />
+    <meta
+      data-rh="true"
+      property="og:description"
+      content="سوق إلكتروني يربط بين المشترين والبائعين داخل محافظة الفيوم."
+    />
+    <meta data-rh="true" property="og:locale" content="ar_EG" />
+    <meta data-rh="true" property="og:image" content="https://shopiklopik.com/pwa-512.png" />
+
+    <meta data-rh="true" name="twitter:card" content="summary_large_image" />
+    <meta data-rh="true" name="twitter:title" content="شوبيك لوبيك | سوق الفيوم الإلكتروني" />
+    <meta
+      data-rh="true"
+      name="twitter:description"
+      content="سوق إلكتروني يربط بين المشترين والبائعين داخل محافظة الفيوم."
+    />
+    <meta data-rh="true" name="twitter:image" content="https://shopiklopik.com/pwa-512.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>شوبيك لوبيك | سوق الفيوم الإلكتروني</title>
+    <!--
+      Theme, before first paint.
+
+      This runs synchronously in <head>, so the document already carries
+      data-theme by the time the first pixel is drawn — no flash of the light
+      theme on a dark-mode load, and no dependence on React having mounted.
+
+      It is a deliberate miniature of `src/utils/theme.js`: it cannot import
+      from the bundle because the bundle does not exist yet. Both read
+      "shobik-theme" and both write data-theme on <html>. Change one, change
+      the other.
+
+      Wrapped in try/catch because localStorage throws outright in some
+      privacy modes; the catch falls back to the OS preference rather than
+      letting a storage error stop the page.
+    -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("shobik-theme");
+          var theme =
+            saved === "dark" || saved === "light"
+              ? saved
+              : window.matchMedia &&
+                window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+          document.documentElement.setAttribute("data-theme", theme);
+          if (theme === "dark") {
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute("content", "#10151d");
+          }
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
