@@ -11,6 +11,24 @@ export default defineConfig({
       registerType: "autoUpdate",
       injectRegister: "auto",
 
+      workbox: {
+        /* The generated worker answers every navigation request from
+           index.html so a deep link resolves in the router. A crawler-facing
+           text file requested straight from the address bar is also a
+           navigation, so without this list an installed worker would hand back
+           the SPA shell for /ads.txt — and keep doing it for returning
+           visitors no matter what the server sends.
+
+           Anything here must be a real file in `public/`. */
+        navigateFallbackDenylist: [
+          /^\/ads\.txt$/,
+          /^\/app-ads\.txt$/,
+          /^\/robots\.txt$/,
+          /^\/sitemap\.xml$/,
+          /^\/\.well-known\//,
+        ],
+      },
+
       manifest: {
         id: "/",
         name: "شوبيك لوبيك - سوق الفيوم",

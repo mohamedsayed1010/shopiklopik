@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import { Helmet } from "react-helmet-async";
 
 import useSiteSettings from "../hooks/useSiteSettings";
+import clearStaticHead from "../seo/clearStaticHead";
 
 function useFavicon(faviconUrl) {
   const originalRef = useRef(null);
@@ -30,43 +30,30 @@ function useFavicon(faviconUrl) {
   }, [faviconUrl]);
 }
 
+/**
+ * Favicon and head housekeeping. Renders nothing.
+ *
+ * This used to also emit a `<Helmet>` of site-level sharing metadata as a
+ * floor beneath each page's `<Seo>`. Under React 19, Helmet stops managing the
+ * head and lets React hoist the tags instead — and hoisting appends without
+ * deduplicating by name or property, so that floor stopped being a fallback
+ * and became a second, competing set of tags on every page.
+ *
+ * The floor is not lost: every route renders exactly one `<Seo>`, whose output
+ * is a superset of what this emitted, and `<Seo>` now falls back to the same
+ * platform settings for the values a page does not spell out itself.
+ */
 export default function SiteHead() {
   const { settings } = useSiteSettings();
 
   useFavicon(settings.faviconUrl);
 
-  const title = settings.siteName || settings.siteNameEn;
+  /* The static tags in `index.html` are the no-JavaScript floor. React has the
+     head now, so they are dropped — nothing else removes them under React 19,
+     and left in place they duplicate every tag `<Seo>` renders. */
+  useEffect(() => {
+    clearStaticHead();
+  }, []);
 
-  return (
-    <Helmet>
-      {/* The site-wide floor. A page that mounts `<Seo>` renders after this —
-          `SiteHead` sits above the outlet — so its values replace these, and a
-          page that mounts none inherits them. */}
-      {settings.description ? (
-        <meta name="description" content={settings.description} />
-      ) : null}
-
-      <meta property="og:type" content="website" />
-
-      <meta property="og:site_name" content={title} />
-
-      <meta property="og:title" content={title} />
-
-      <meta property="og:description" content={settings.description} />
-
-      <meta name="twitter:card" content="summary_large_image" />
-
-      <meta name="twitter:title" content={title} />
-
-      <meta name="twitter:description" content={settings.description} />
-
-      {settings.logoUrl ? (
-        <meta property="og:image" content={settings.logoUrl} />
-      ) : null}
-
-      {settings.logoUrl ? (
-        <meta name="twitter:image" content={settings.logoUrl} />
-      ) : null}
-    </Helmet>
-  );
+  return null;
 }

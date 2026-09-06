@@ -1,32 +1,10 @@
 
-import { writeFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
 
-const here = dirname(fileURLToPath(import.meta.url));
+import { ROOT, siteOrigin, fetchCategoryTree } from "./seoBuildData.mjs";
 
-const root = resolve(here, "..");
-
-const publicDir = join(root, "public");
-
-/** `VITE_SITE_URL` from the environment, or from a local .env file. */
-function siteUrl() {
-  if (process.env.VITE_SITE_URL) return process.env.VITE_SITE_URL.trim();
-
-  for (const name of [".env.production", ".env.local", ".env"]) {
-    const file = join(root, name);
-
-    if (!existsSync(file)) continue;
-
-    const match = readFileSync(file, "utf8").match(
-      /^\s*VITE_SITE_URL\s*=\s*(.+)$/m
-    );
-
-    if (match) return match[1].trim().replace(/^["']|["']$/g, "");
-  }
-
-  return "";
-}
+const publicDir = join(ROOT, "public");
 
 async function loadPolicy() {
   const module = await import(
@@ -61,6 +39,17 @@ function buildRobots({ privatePrefixes, noindexPaths, sitemap }) {
   return `${lines.join("\n")}\n`;
 }
 
+/* A sitemap is XML, and a category name never reaches it — but <loc> still has
+   to survive an id that contains a character XML reserves. */
+function xmlEscape(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
 function buildSitemap(origin, entries) {
   const today = new Date().toISOString().slice(0, 10);
 
@@ -68,7 +57,7 @@ function buildSitemap(origin, entries) {
     .map(({ path, changefreq, priority }) =>
       [
         "  <url>",
-        `    <loc>${origin}${path}</loc>`,
+        `    <loc>${xmlEscape(origin + path)}</loc>`,
         `    <lastmod>${today}</lastmod>`,
         `    <changefreq>${changefreq}</changefreq>`,
         `    <priority>${priority}</priority>`,
@@ -86,12 +75,56 @@ function buildSitemap(origin, entries) {
   ].join("\n");
 }
 
+/**
+ * The static addresses, then a URL for every category and every subcategory.
+ *
+ * These are the pages the router marks public, and the pages a visitor without
+ * an account can actually read. The ad itself is behind the sign-in guard, so
+ * it is not listed — a sitemap entry for a page that answers with a login form
+ * is worse than no entry at all.
+ */
+function catalogueEntries(tree, { categoryPath, subCategoryPath }) {
+  const entries = [];
+
+  for (const category of tree) {
+    entries.push({
+      path: categoryPath(category.id),
+      changefreq: "weekly",
+      priority: "0.8",
+    });
+
+    for (const sub of category.subCategories) {
+      entries.push({
+        path: subCategoryPath(category.id, sub.id),
+        changefreq: "daily",
+        priority: "0.7",
+      });
+    }
+  }
+
+  return entries;
+}
+
+/** First occurrence wins, so the static entries keep their priorities. */
+function dedupe(entries) {
+  const seen = new Set();
+
+  return entries.filter(({ path }) => {
+    if (seen.has(path)) return false;
+
+    seen.add(path);
+
+    return true;
+  });
+}
+
 async function main() {
-  const { PRIVATE_PREFIXES, NOINDEX_PATHS, SITEMAP_PATHS } = await loadPolicy();
+  const { PRIVATE_PREFIXES, NOINDEX_PATHS, SITEMAP_PATHS, categoryPath, subCategoryPath } =
+    await loadPolicy();
 
   if (!existsSync(publicDir)) mkdirSync(publicDir, { recursive: true });
 
-  const origin = siteUrl().replace(/\/+$/, "");
+  const origin = siteOrigin();
 
   const sitemapUrl = origin ? `${origin}/sitemap.xml` : "";
 
@@ -116,14 +149,50 @@ async function main() {
     return;
   }
 
+  const tree = await fetchCategoryTree();
+
+  /* The catalogue could not be read. Rewriting the sitemap now would replace a
+     complete file with a five-line one over what is usually a transient
+     network failure, and search engines would read that as the catalogue
+     having been withdrawn. Keeping the previous file is the safer answer. */
+  if (!tree) {
+    const existing = join(publicDir, "sitemap.xml");
+
+    if (existsSync(existing)) {
+      console.warn(
+        "[seo] category tree unavailable — keeping the existing sitemap.xml " +
+          "rather than shrinking it to the static pages."
+      );
+
+      return;
+    }
+
+    console.warn(
+      "[seo] category tree unavailable and no sitemap.xml exists — writing " +
+        "the static pages only."
+    );
+  }
+
+  const entries = dedupe([
+    ...SITEMAP_PATHS,
+    ...(tree ? catalogueEntries(tree, { categoryPath, subCategoryPath }) : []),
+  ]);
+
   writeFileSync(
     join(publicDir, "sitemap.xml"),
-    buildSitemap(origin, SITEMAP_PATHS),
+    buildSitemap(origin, entries),
     "utf8"
   );
 
+  const categories = tree?.length ?? 0;
+
+  const subCategories =
+    tree?.reduce((total, row) => total + row.subCategories.length, 0) ?? 0;
+
   console.log(
-    `[seo] wrote public/sitemap.xml with ${SITEMAP_PATHS.length} URL(s)`
+    `[seo] wrote public/sitemap.xml with ${entries.length} URL(s) — ` +
+      `${SITEMAP_PATHS.length} static, ${categories} category, ` +
+      `${subCategories} subcategory`
   );
 }
 

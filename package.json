@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "seo:generate": "node scripts/generate-seo-files.mjs",
-    "prebuild": "node scripts/generate-seo-files.mjs"
+    "seo:prerender": "node scripts/prerender.mjs",
+    "prebuild": "node scripts/generate-seo-files.mjs",
+    "postbuild": "node scripts/prerender.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

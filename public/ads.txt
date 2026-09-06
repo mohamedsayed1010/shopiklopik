@@ -1,0 +1,18 @@
+# ads.txt — authorized digital sellers for shopiklopik.com
+# IAB Tech Lab ads.txt v1.1
+#
+# Served as a real file from `public/`, so Nginx's `try_files $uri` finds it
+# before the SPA fallback — the same reason robots.txt and sitemap.xml already
+# return text/plain rather than index.html.
+#
+# Fields: <exchange domain>, <publisher id>, <relationship>, <certification id>
+#
+# The publisher id is the `ca-pub-6763159022783792` client in index.html with
+# the `ca-` prefix dropped, which is the form ads.txt takes. f08c47fec0942fa0
+# is Google's own TAG-ID and is the same for every AdSense publisher.
+#
+# This is the complete file for a site monetised by AdSense alone. Adding any
+# other network — Ad Manager, a header-bidding partner, a reseller — means
+# adding the line that network publishes for this account, and nothing else.
+
+google.com, pub-6763159022783792, DIRECT, f08c47fec0942fa0

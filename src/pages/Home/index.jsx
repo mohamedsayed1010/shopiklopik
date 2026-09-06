@@ -1,4 +1,7 @@
 import Seo from "../../components/Seo";
+import JsonLd from "../../components/JsonLd";
+import { homeGraph } from "../../seo/structuredData";
+import useSiteSettings from "../../hooks/useSiteSettings";
 
 import Hero from "../../components/Home/Hero/Hero";
 import BannerSlot from "../../components/banners/BannerSlot";
@@ -8,12 +11,17 @@ import HomeListingSections from "../../components/Home/ListingSections/index";
 import { PLACEMENT_KEYS } from "../../utils/bannerPlacements";
 
 export default function Home() {
+  const { settings } = useSiteSettings();
+
   return (
     <>
       {/* The one page whose title is the site-s own positioning rather than a
-          section name. The description is left to `SiteHead`, which reads the
-          administrator-s own wording from the settings. */}
+          section name. The description is left to `Seo`, which falls back to
+          the administrator-s own wording from the settings. */}
       <Seo title="سوق الفيوم الإلكتروني" />
+
+      {/* Who the site is, from the same settings the footer prints. */}
+      <JsonLd data={homeGraph({ settings })} />
 
       <Hero />
 

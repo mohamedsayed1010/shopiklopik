@@ -8,14 +8,26 @@
     <meta name="theme-color" content="#041B3D" />
 
     <!--
-      Every tag below carries `data-rh` on purpose.
+      Every tag below carries `data-rh` on purpose — including the <title>.
 
-      react-helmet-async marks the tags it manages with that attribute and
-      replaces them on render. A tag shipped here *without* it is invisible to
-      Helmet, so emitting the same tag from a component left two in the head —
-      with the static one first, and therefore the one a scraper reads. Marking
-      them makes these the values a no-JS crawler sees and the values Helmet
-      overwrites the moment the app renders a page.
+      These are the values a scraper that does not run JavaScript reads for
+      every address: Facebook, WhatsApp and X never execute the bundle, so
+      without them a share preview would be blank.
+
+      They are NOT what a browser ends up with. `src/seo/clearStaticHead.js`
+      removes everything marked `data-rh` from the head as soon as React
+      mounts, leaving the single per-page set that `<Seo>` renders.
+
+      That removal is explicit because it has to be. react-helmet-async used to
+      do it itself — it marked its own tags `data-rh` and swept the old ones on
+      every render. Under React 19 it steps aside and lets React hoist the tags
+      natively, and hoisting only appends: it never reconciles against markup
+      React did not render, and it does not deduplicate meta by name. Left
+      alone, these tags survived alongside Helmet's and every page shipped two
+      titles and contradictory robots directives.
+
+      So: add a tag here only if it should be part of the no-JS floor, always
+      mark it `data-rh`, and make sure `<Seo>` renders the real one.
     -->
     <meta
       data-rh="true"
@@ -68,7 +80,7 @@
       rel="stylesheet"
     />
 
-    <title>شوبيك لوبيك | سوق الفيوم الإلكتروني</title>
+    <title data-rh="true">شوبيك لوبيك | سوق الفيوم الإلكتروني</title>
     <!--
       Theme, before first paint.
 

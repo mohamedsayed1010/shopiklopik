@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Seo from "../../components/Seo";
+import JsonLd from "../../components/JsonLd";
 import { sectionDescription } from "../../seo/descriptions";
+import { subCategoryGraph } from "../../seo/structuredData";
 import {
   ChevronRight,
   ChevronLeft,
@@ -188,6 +190,18 @@ function MarketplaceListPage() {
           subCategoryName:
             config?.subCategory?.nameAr ?? config?.subCategory?.name,
           label: config?.list?.label,
+        })}
+      />
+
+      {/* The trail back through the category, and the fact that this address
+          is a collection. The rows themselves are not described: opening one
+          needs an account, so listing them here would point a crawler at the
+          sign-in form. */}
+      <JsonLd
+        data={subCategoryGraph({
+          category: config?.category,
+          subCategory: config?.subCategory,
+          description: config?.list?.label,
         })}
       />
 

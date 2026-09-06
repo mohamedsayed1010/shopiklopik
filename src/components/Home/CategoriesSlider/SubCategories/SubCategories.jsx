@@ -1,6 +1,8 @@
 import { useParams } from "react-router-dom";
 import Seo from "../../../Seo";
+import JsonLd from "../../../JsonLd";
 import { categoryDescription } from "../../../../seo/descriptions";
+import { categoryGraph } from "../../../../seo/structuredData";
 import { Layers } from "lucide-react";
 
 import useCategoriesTree from "../../../CreateAd/useCategoriesTree";
@@ -31,6 +33,12 @@ export default function SubCategories() {
           categoryName: category?.nameAr ?? category?.name,
         })}
       />
+
+      {/* The trail back to the home page, and the sections this category
+          holds — every one of them an address a reader can open without an
+          account. Built from the same tree the grid below renders, so the two
+          can never disagree. */}
+      <JsonLd data={categoryGraph({ category })} />
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
         <PageHeader

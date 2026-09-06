@@ -52,7 +52,12 @@ export default function Seo({
     return `${base} | ${siteName}`;
   })();
 
-  const metaDescription = clamp(description, 160);
+  /* A page that writes its own description wins; anything else inherits the
+     platform's. `SiteHead` used to supply that floor from a second `<Helmet>`,
+     which under React 19 stopped acting as a fallback and started appending a
+     duplicate tag instead — so the fallback lives here now, in the one place
+     that renders the description. */
+  const metaDescription = clamp(description || settings.description, 160);
 
   const url = canonicalUrl(canonicalPath ?? pathname);
 
