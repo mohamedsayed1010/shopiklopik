@@ -1,4 +1,19 @@
-const CONFIGURED = import.meta.env.VITE_SITE_URL || "";
+/**
+ * The configured origin.
+ *
+ * Two callers, two ways in. In the browser Vite has already inlined
+ * `import.meta.env`, so the value is a literal by the time this runs. In Node
+ 
+ *
+
+ */
+function configured() {
+  const fromVite = import.meta.env?.VITE_SITE_URL;
+
+  if (fromVite) return fromVite;
+
+  return globalThis.process?.env?.VITE_SITE_URL || "";
+}
 
 function currentOrigin() {
   if (typeof window === "undefined" || !window.location) return "";
@@ -8,7 +23,7 @@ function currentOrigin() {
 
 /** The origin, never with a trailing slash. */
 export function siteOrigin() {
-  const value = String(CONFIGURED || currentOrigin() || "");
+  const value = String(configured() || currentOrigin() || "");
 
   return value.replace(/\/+$/, "");
 }

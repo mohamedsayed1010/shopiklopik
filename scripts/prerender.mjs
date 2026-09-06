@@ -47,6 +47,18 @@ import {
   fetchSettings,
 } from "./seoBuildData.mjs";
 
+/* The same builders the running app uses. Imported, not reimplemented: a
+   second copy of the schemas here would drift from the one `<JsonLd>` renders,
+   and a crawler would then read a different graph from the one a re-crawl with
+   JavaScript produces.
+ */
+import {
+  homeGraph,
+  categoryGraph,
+  subCategoryGraph,
+  serializeGraph,
+} from "../src/seo/structuredData.js";
+
 const distDir = join(ROOT, "dist");
 
 const shellPath = join(distDir, "index.html");
@@ -168,6 +180,23 @@ function paragraphs(text) {
 
 function body(inner) {
   return `<div style="${SHELL_STYLE}">\n      ${inner}\n    </div>`;
+}
+
+/**
+ *
+ * the tree renders the same graph again — one block before hydration, one
+ * after, never two at once. A block placed outside `#root` would survive and
+ * be duplicated.
+ *
+ * `serializeGraph` has already escaped every `<`, so this cannot close the tag
+ * it is written into.
+ */
+function jsonLd(graph) {
+  const json = serializeGraph(graph);
+
+  if (!json) return "";
+
+  return `\n    <script type="application/ld+json">${json}</script>`;
 }
 
 function homeBody({ settings, tree }) {
@@ -327,6 +356,12 @@ async function main() {
     return;
   }
 
+  /* `canonicalUrl`, inside the shared schema builders, reads this. In the
+     bundle Vite has already inlined it; here it has to be handed over, and it
+     may have come from a .env file rather than the environment. Set before any
+     builder runs, or every schema that needs a URL returns null. */
+  process.env.VITE_SITE_URL = origin;
+
   const [tree, settings] = await Promise.all([
     fetchCategoryTree(),
     fetchSettings(),
@@ -371,7 +406,7 @@ async function main() {
     title: suffix("سوق الفيوم الإلكتروني"),
     description: oneLine(settings?.description) || siteName,
     image,
-    body: homeBody({ settings, tree }),
+    body: homeBody({ settings, tree }) + jsonLd(homeGraph({ settings })),
   });
 
   for (const category of tree) {
@@ -382,7 +417,7 @@ async function main() {
         `تصفّح أقسام ${category.name} داخل ${siteName} واختر القسم المناسب للوصول إلى الإعلانات المتاحة.`
       ),
       image,
-      body: categoryBody({ category }),
+      body: categoryBody({ category }) + jsonLd(categoryGraph({ category })),
     });
 
     for (const sub of category.subCategories) {
@@ -393,7 +428,13 @@ async function main() {
           `أحدث إعلانات ${sub.name} في قسم ${category.name} على ${siteName}.`
         ),
         image,
-        body: subCategoryBody({ category, sub }),
+        body:
+          subCategoryBody({ category, sub }) +
+          /* No `description`: at runtime it is the read-config's list label,
+             which would cost 52 extra requests to fetch here. It is optional,
+             so `collectionPageSchema` simply omits the field — the same
+             schema, one property lighter than the hydrated page's. */
+          jsonLd(subCategoryGraph({ category, subCategory: sub })),
       });
     }
   }

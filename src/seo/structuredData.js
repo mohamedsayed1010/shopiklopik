@@ -10,20 +10,15 @@
  *
  * What is deliberately absent
  * ---------------------------
- * `Product` and `Offer`. The listings carry a real title and a real price, but
- * a product needs a URL a crawler can actually open, and the ad's own page is
- * behind the sign-in guard. Marking up items whose `url` answers with a login
- * form is not an incomplete description, it is a wrong one. The API also
- * publishes no availability or item condition. When the ad pages become
- * readable without an account, this is the file to add them to.
+ 
  *
  * `LocalBusiness`. The settings hold one address and one phone number, but
  * they belong to the marketplace's support desk, not to a storefront with
  * opening hours and a geo location. The type would not describe the thing.
  */
 
-import { canonicalUrl } from "./siteUrl";
-import { categoryPath, subCategoryPath } from "./routePolicy";
+import { canonicalUrl } from "./siteUrl.js";
+import { categoryPath, subCategoryPath } from "./routePolicy.js";
 
 /** Drop the keys whose value the application did not actually have. */
 function present(object) {
@@ -175,6 +170,28 @@ export function collectionPageSchema({ name, description, path }) {
     url,
     inLanguage: "ar-EG",
   });
+}
+
+/**
+ * The exact bytes that belong inside a `<script type="application/ld+json">`,
+ * or `null` when the graph came back empty.
+ *
+ * Shared rather than duplicated: `<JsonLd>` renders this in the browser and
+ * `scripts/prerender.mjs` writes it into the prerendered document, and the two
+ * must not be able to drift — a crawler comparing the served HTML with the
+ * hydrated page should see the same graph.
+ *
+
+ */
+export function serializeGraph(data) {
+  const graph = (Array.isArray(data) ? data : [data]).filter(Boolean);
+
+  if (!graph.length) return null;
+
+  return JSON.stringify(graph.length === 1 ? graph[0] : graph).replace(
+    /</g,
+    "\\u003c"
+  );
 }
 
 /* ---------------------------------------------------------------------------
