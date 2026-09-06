@@ -7,6 +7,7 @@ export default function useCategoriesTree() {
     data,
     isLoading,
     isError,
+    isSuccess,
     error,
   } = useQuery({
     queryKey: ["categories-tree"],
@@ -22,6 +23,11 @@ export default function useCategoriesTree() {
     categories: data?.data || [],
     isLoading,
     isError,
+    /* The tree answered. Distinct from `!isLoading`, which is also true while
+       the query sits pending and unfetched — offline, say — with nothing to
+       read; a caller deciding that an id is absent needs the answer itself,
+       not merely the absence of a spinner. */
+    isSuccess,
     error,
   };
 }

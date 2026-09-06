@@ -16,7 +16,7 @@ import NotFound from "../../../../pages/NotFound";
 export default function SubCategories() {
   const { categoryId } = useParams();
 
-  const { categories, isLoading, isError } = useCategoriesTree();
+  const { categories, isLoading, isError, isSuccess } = useCategoriesTree();
 
   const category = categories.find(
     (item) => String(item.id) === String(categoryId)
@@ -24,9 +24,18 @@ export default function SubCategories() {
 
   const subCategories = category?.subCategories || [];
 
+  /* A category is addressed by its numeric id, so an id that is not a positive
+     integer names nothing the tree could ever hold. Answering that from the
+     address alone is what keeps `/category/abc` off this page on the first
+     paint, instead of behind a request whose answer is already known. */
+  const isMalformedId = !/^\d+$/.test(String(categoryId ?? ""));
 
-  const isMissingCategory =
-    !isLoading && !isError && categories.length > 0 && !category;
+  /* A well-formed id the loaded tree does not carry. Only the tree can answer
+     this one, so it still waits for the request — but a tree that came back is
+     a complete answer, empty or not, and nothing is asked of its length. */
+  const isUnknownCategory = isSuccess && !category;
+
+  const isMissingCategory = isMalformedId || isUnknownCategory;
 
   /* Rendered instead of this page, not inside it, so the reader gets the
      ordinary not-found experience and its `noindex, follow` — rather than this
