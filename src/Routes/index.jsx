@@ -1,49 +1,63 @@
 import { createBrowserRouter } from "react-router-dom";
 import { registerAppRoutes } from "./routeRegistry";
-import Register from "../components/Register/Register";
+
+/* ---------------------------------------------------------------------------
+   Loaded with the app.
+
+
+   The two guards in particular have to stay eager. They decide whether the
+   page behind them renders at all, and a lazy guard would mean fetching a
+   chunk to find out the reader may not have it.
+   ------------------------------------------------------------------------ */
 import Layout from "../components/Layout/Layout";
-import Login from "../components/Login/Login";
 import ProtectedRoute from './../components/ProtectedRoute/ProtectedRoute';
 import AdminRoute from "../components/AdminRoute/AdminRoute";
 import Home from "../pages/Home/index";
+import Login from "../components/Login/Login";
+import Register from "../components/Register/Register";
 import ForgotPassword from "../components/ForgetPassword/ForgotPassword";
 import ResetPassword from "../components/ResetPassword/ResetPassword";
-import Profile from "../pages/Profile/Profile";
-import CreateAd from "../components/CreateAd/CreateAd";
-import CategoryDetails from "../components/CreateAd/CategoryDetails";
-import DynamicAdForm from "../components/CreateAd/DynamicAdForm";
 import SubCategories from "../components/Home/CategoriesSlider/SubCategories/SubCategories";
 import DynamicListPage from "../pages/DynamicList";
-import DynamicDetailsPage from "../pages/DynamicDetails";
-import EditListingPage from "../pages/EditListing";
-import FavoritesPage from "../pages/Favorites";
-import NotificationSettingsPage from "../pages/NotificationSettings";
-import AdminDashboardPage from "../pages/Admin/Dashboard";
-import AdminAdsPage from "../pages/Admin/Ads";
-import AdminUsersPage from "../pages/Admin/Users";
-import AdminAccountsPage from "../pages/Admin/Accounts";
-import AdminAccountCreatePage from "../pages/Admin/Accounts/Create";
-import AdminAccountPermissionsPage from "../pages/Admin/Accounts/Permissions";
-import AdminReportsPage from "../pages/Admin/Reports";
-import AdminFeedbackPage from "../pages/Admin/Feedback";
-import AdminAuditLogsPage from "../pages/Admin/AuditLogs";
-import AdminSettingsPage from "../pages/Admin/Settings";
-import AdminPaymentMethodsPage from "../pages/Admin/PaymentMethods";
-import AdminBannersPage from "../pages/Admin/Banners";
-import MyPaymentsPage from "../pages/Payments";
-import NewPaymentPage from "../pages/Payments/NewPayment";
-import PaymentDetailsPage from "../pages/Payments/PaymentDetails";
 import AboutPage from "../pages/About";
 import ContactPage from "../pages/Contact";
 import TermsPage from "../pages/Terms";
 import PrivacyPage from "../pages/Privacy";
-import BannerBookingPage from "../pages/BannerBooking";
-import MyBannerBookingsPage from "../pages/MyBannerBookings";
-import BannerBookingDetailsPage from "../pages/MyBannerBookings/Details";
-import ReferralsPage from "../pages/Referrals";
-import AdminReferralsPage from "../pages/Admin/Referrals";
-import AdminReferralDetailsPage from "../pages/Admin/Referrals/Details";
 import NotFound from "../pages/NotFound";
+
+/* Fetched on arrival instead of with the app — see `./lazyRoutes` for which
+   pages those are and why each one qualifies. */
+import {
+  Profile,
+  FavoritesPage,
+  NotificationSettingsPage,
+  ReferralsPage,
+  DynamicDetailsPage,
+  EditListingPage,
+  CreateAd,
+  CategoryDetails,
+  DynamicAdForm,
+  MyPaymentsPage,
+  NewPaymentPage,
+  PaymentDetailsPage,
+  BannerBookingPage,
+  MyBannerBookingsPage,
+  BannerBookingDetailsPage,
+  AdminDashboardPage,
+  AdminAdsPage,
+  AdminUsersPage,
+  AdminAccountsPage,
+  AdminAccountCreatePage,
+  AdminAccountPermissionsPage,
+  AdminReportsPage,
+  AdminFeedbackPage,
+  AdminAuditLogsPage,
+  AdminSettingsPage,
+  AdminPaymentMethodsPage,
+  AdminBannersPage,
+  AdminReferralsPage,
+  AdminReferralDetailsPage,
+} from "./lazyRoutes";
 
 const routes = [
   {path: "", element: <Layout/>, children: [

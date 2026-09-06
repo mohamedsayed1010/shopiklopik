@@ -11,6 +11,7 @@ import PageHeader from "../../../ui/PageHeader";
 import EmptyState from "../../../ui/EmptyState";
 import ErrorState from "../../../ui/ErrorState";
 import { SubCategoryGridSkeleton } from "../../../ui/Skeleton";
+import NotFound from "../../../../pages/NotFound";
 
 export default function SubCategories() {
   const { categoryId } = useParams();
@@ -22,6 +23,15 @@ export default function SubCategories() {
   );
 
   const subCategories = category?.subCategories || [];
+
+
+  const isMissingCategory =
+    !isLoading && !isError && categories.length > 0 && !category;
+
+  /* Rendered instead of this page, not inside it, so the reader gets the
+     ordinary not-found experience and its `noindex, follow` — rather than this
+     page's own `index, follow` and a heading for a section that is not there. */
+  if (isMissingCategory) return <NotFound />;
 
   return (
     <>

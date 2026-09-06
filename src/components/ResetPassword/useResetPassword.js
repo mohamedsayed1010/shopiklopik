@@ -60,5 +60,6 @@ export default function useResetPassword() {
   return {
     formik,
     isPending,
+    hasResetToken: Boolean(resetToken),
   };
 }

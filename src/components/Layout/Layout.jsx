@@ -1,5 +1,7 @@
-import { useContext, useEffect } from "react";
+import { Suspense, useContext, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+
+import { PageSpinner } from "../ui/Spinner";
 
 import Navbar from "../Navbar/Navbar";
 import Footer from "../Footer/Footer";
@@ -61,7 +63,10 @@ export default function Layout() {
         {underMaintenance ? (
           <MaintenanceScreen message={settings.maintenanceMessage} />
         ) : (
-          <Outlet />
+
+          <Suspense fallback={<PageSpinner />}>
+            <Outlet />
+          </Suspense>
         )}
       </main>
 

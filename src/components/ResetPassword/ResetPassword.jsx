@@ -1,3 +1,4 @@
+import { Navigate } from "react-router-dom";
 import Seo from "../Seo";
 import { Lock, ShieldCheck } from "lucide-react";
 
@@ -8,7 +9,14 @@ import { TextField } from "../ui/TextField";
 import PasswordChecklist from "../ui/PasswordChecklist";
 
 export default function ResetPassword() {
-  const { formik, isPending } = useResetPassword();
+  const { formik, isPending, hasResetToken } = useResetPassword();
+
+  /* Reached without the token the OTP step hands over, so there is nothing to
+     reset with. Back to the start of the flow rather than a form whose submit
+     can only fail — `replace`, so the back button does not land here again. */
+  if (!hasResetToken) {
+    return <Navigate to="/forgot-password" replace />;
+  }
 
   return (
     <>
