@@ -1,33 +1,25 @@
 import { createBrowserRouter } from "react-router-dom";
 import { registerAppRoutes } from "./routeRegistry";
 
-/* ---------------------------------------------------------------------------
-   Loaded with the app.
-
-
-   The two guards in particular have to stay eager. They decide whether the
-   page behind them renders at all, and a lazy guard would mean fetching a
-   chunk to find out the reader may not have it.
-   ------------------------------------------------------------------------ */
 import Layout from "../components/Layout/Layout";
 import ProtectedRoute from './../components/ProtectedRoute/ProtectedRoute';
 import AdminRoute from "../components/AdminRoute/AdminRoute";
 import Home from "../pages/Home/index";
-import Login from "../components/Login/Login";
-import Register from "../components/Register/Register";
-import ForgotPassword from "../components/ForgetPassword/ForgotPassword";
-import ResetPassword from "../components/ResetPassword/ResetPassword";
-import SubCategories from "../components/Home/CategoriesSlider/SubCategories/SubCategories";
-import DynamicListPage from "../pages/DynamicList";
-import AboutPage from "../pages/About";
-import ContactPage from "../pages/Contact";
-import TermsPage from "../pages/Terms";
-import PrivacyPage from "../pages/Privacy";
-import NotFound from "../pages/NotFound";
 
 /* Fetched on arrival instead of with the app — see `./lazyRoutes` for which
    pages those are and why each one qualifies. */
 import {
+  SubCategories,
+  DynamicListPage,
+  Login,
+  Register,
+  ForgotPassword,
+  ResetPassword,
+  AboutPage,
+  ContactPage,
+  TermsPage,
+  PrivacyPage,
+  NotFound,
   Profile,
   FavoritesPage,
   NotificationSettingsPage,
@@ -61,10 +53,6 @@ import {
 
 const routes = [
   {path: "", element: <Layout/>, children: [
-    /* Discovery is public: the home page, a category's subcategories and a
-       subcategory's listing rows. These are the pages a visitor — or a
-       crawler — must be able to read without an account, and every endpoint
-       behind them answers anonymously. Opening one ad is where the wall is. */
     {index: true, element: <Home/>},
     {path:"create-product", element: <ProtectedRoute> <CreateAd/> </ProtectedRoute>},
     {path:"create-product/:categoryId", element: <ProtectedRoute> <CategoryDetails/> </ProtectedRoute>},

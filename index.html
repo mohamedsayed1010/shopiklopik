@@ -7,28 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#041B3D" />
 
-    <!--
-      Every tag below carries `data-rh` on purpose — including the <title>.
-
-      These are the values a scraper that does not run JavaScript reads for
-      every address: Facebook, WhatsApp and X never execute the bundle, so
-      without them a share preview would be blank.
-
-      They are NOT what a browser ends up with. `src/seo/clearStaticHead.js`
-      removes everything marked `data-rh` from the head as soon as React
-      mounts, leaving the single per-page set that `<Seo>` renders.
-
-      That removal is explicit because it has to be. react-helmet-async used to
-      do it itself — it marked its own tags `data-rh` and swept the old ones on
-      every render. Under React 19 it steps aside and lets React hoist the tags
-      natively, and hoisting only appends: it never reconciles against markup
-      React did not render, and it does not deduplicate meta by name. Left
-      alone, these tags survived alongside Helmet's and every page shipped two
-      titles and contradictory robots directives.
-
-      So: add a tag here only if it should be part of the no-JS floor, always
-      mark it `data-rh`, and make sure `<Seo>` renders the real one.
-    -->
     <meta
       data-rh="true"
       name="description"
@@ -37,11 +15,6 @@
 
     <meta data-rh="true" name="robots" content="index, follow" />
 
-    <!--
-      The share-preview floor. Facebook, WhatsApp and X do not run JavaScript,
-      so for them these site-level values are the preview for every address.
-      Per-page previews need pre-rendering, which this SPA does not do.
-    -->
     <meta data-rh="true" property="og:type" content="website" />
     <meta data-rh="true" property="og:site_name" content="شوبيك لوبيك" />
     <meta data-rh="true" property="og:title" content="شوبيك لوبيك | سوق الفيوم الإلكتروني" />
@@ -62,41 +35,26 @@
     />
     <meta data-rh="true" name="twitter:image" content="https://shopiklopik.com/pwa-512.png" />
 
-    <!--
-      Google AdSense site code, for shopiklopik.com. Loaded once, here, so it
-      is present on every address the SPA serves — the shell is the only HTML
-      the browser ever parses. Never mount a second copy from a component.
-    -->
-    <script
-      async
-      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6763159022783792"
-      crossorigin="anonymous"
-    ></script>
+    <script>
+      (function () {
+        function loadAdSense() {
+          var s = document.createElement("script");
+          s.async = true;
+          s.crossOrigin = "anonymous";
+          s.src =
+            "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6763159022783792";
+          document.head.appendChild(s);
+        }
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+        if (document.readyState === "complete") loadAdSense();
+        else window.addEventListener("load", loadAdSense, { once: true });
+      })();
+    </script>
+
+    <link rel="preconnect" href="https://api.shopiklopik.com" crossorigin />
+
 
     <title data-rh="true">شوبيك لوبيك | سوق الفيوم الإلكتروني</title>
-    <!--
-      Theme, before first paint.
-
-      This runs synchronously in <head>, so the document already carries
-      data-theme by the time the first pixel is drawn — no flash of the light
-      theme on a dark-mode load, and no dependence on React having mounted.
-
-      It is a deliberate miniature of `src/utils/theme.js`: it cannot import
-      from the bundle because the bundle does not exist yet. Both read
-      "shobik-theme" and both write data-theme on <html>. Change one, change
-      the other.
-
-      Wrapped in try/catch because localStorage throws outright in some
-      privacy modes; the catch falls back to the OS preference rather than
-      letting a storage error stop the page.
-    -->
     <script>
       (function () {
         try {

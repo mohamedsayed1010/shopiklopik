@@ -1,41 +1,3 @@
-/**
- * Writes a real HTML document for each public route that a crawler can read
- * without running JavaScript.
- *
- * Why this is not SSR
- * -------------------
- * The app is a client-rendered Vite SPA. Rendering its actual component tree
- * at build time would mean a server entry, a static router, a react-query
- * hydration boundary and stubs for the browser globals that the theme script,
- * the auth context, Swiper and framer-motion all touch on import. That is an
- * architecture change, and it is not what this file does.
- *
- * What it does instead is narrower and, for the problem being solved, enough:
- * the pages listed below are the ones whose *content is already known at build
- * time*, because it comes from two anonymous endpoints the site already
- * serves — the category tree and the platform settings. For each of them this
- * writes the built shell with (a) that route's own title, description and
- * canonical, and (b) the page's real headings, text and links inside
- * `#root`.
- *
- * A crawler that does not execute scripts therefore reads the section name and
- * the links onward instead of an empty div. A browser runs the bundle, React
- * takes the root over, and the page behaves exactly as before.
- *
- * What it deliberately does not write
- * -----------------------------------
- * Listings. They change constantly and a build-time copy would be stale within
- * the hour, so no advertisement text, price or photo is ever baked in — the
- * catalogue rows stay client-rendered. The ad's own page is behind the sign-in
- * guard and is not prerendered at all.
- *
- * Ordering
- * --------
- * Runs as `postbuild`, after Vite has written `dist/` *and* after the PWA
- * plugin has generated `sw.js`. That ordering is deliberate: the precache
- * manifest is already sealed, so these files are not added to it and the
- * service worker keeps its existing eight entries.
- */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -47,11 +9,6 @@ import {
   fetchSettings,
 } from "./seoBuildData.mjs";
 
-/* The same builders the running app uses. Imported, not reimplemented: a
-   second copy of the schemas here would drift from the one `<JsonLd>` renders,
-   and a crawler would then read a different graph from the one a re-crawl with
-   JavaScript produces.
- */
 import {
   homeGraph,
   categoryGraph,
@@ -89,20 +46,11 @@ function oneLine(value, max = 160) {
 
 /* ------------------------------------------------------------------- the head */
 
-/**
- * Replaces the shell's site-level tags with this route's own.
- *
- * The shell ships one set of `data-rh` tags as the no-JavaScript floor for
- * every address. Here the floor can be exact, so the generic set is removed
- * and a route-specific one written in its place — still marked `data-rh`, so
- * `clearStaticHead` drops it the moment React mounts and `<Seo>` renders the
- * live values. One set before hydration, one set after; never both.
- */
 function withHead(shell, { origin, path, title, description, image }) {
-  /* The home page is `${origin}/`, with the slash — that is what `canonicalUrl`
-     produces in the browser and what the sitemap lists, and a canonical that
-     disagrees with either of them splits the page in two as far as a crawler
-     is concerned. */
+  if (path !== "/") {
+    shell = shell.replace(/[ \t]*<link[^>]*data-hero-preload="true"[^>]*>\n?/g, "");
+  }
+
   const url = path === "/" ? `${origin}/` : `${origin}${path}`;
 
   /* Every tag the shell marks `data-rh` goes, including a canonical this
@@ -142,10 +90,6 @@ function withHead(shell, { origin, path, title, description, image }) {
 
 /* ------------------------------------------------------------------- the body */
 
-/* Plain, self-contained markup. It carries its own colours because it is read
-   before the app's classes mean anything, and it is replaced wholesale the
-   moment React takes the root — so it does not try to imitate the real UI, it
-   only needs to say what the page is and where it leads. */
 const SHELL_STYLE = [
   "margin:0 auto",
   "max-width:70rem",
@@ -182,15 +126,6 @@ function body(inner) {
   return `<div style="${SHELL_STYLE}">\n      ${inner}\n    </div>`;
 }
 
-/**
- *
- * the tree renders the same graph again — one block before hydration, one
- * after, never two at once. A block placed outside `#root` would survive and
- * be duplicated.
- *
- * `serializeGraph` has already escaped every `<`, so this cannot close the tag
- * it is written into.
- */
 function jsonLd(graph) {
   const json = serializeGraph(graph);
 
@@ -318,10 +253,6 @@ function contactBody({ settings }) {
 
 /* --------------------------------------------------------------------- output */
 
-/* `#root` is the only thing in the shell's body, so the replacement is
-   anchored on `</body>` rather than on the div being empty. That way a root
-   this script has already filled is overwritten rather than skipped, and
-   running the step twice produces the same file as running it once. */
 const ROOT_REGION = /(<div id="root">)[\s\S]*?(<\/div>\s*<\/body>)/;
 
 function writeRoute(shell, origin, route) {
@@ -356,10 +287,6 @@ async function main() {
     return;
   }
 
-  /* `canonicalUrl`, inside the shared schema builders, reads this. In the
-     bundle Vite has already inlined it; here it has to be handed over, and it
-     may have come from a .env file rather than the environment. Set before any
-     builder runs, or every schema that needs a URL returns null. */
   process.env.VITE_SITE_URL = origin;
 
   const [tree, settings] = await Promise.all([
@@ -430,10 +357,6 @@ async function main() {
         image,
         body:
           subCategoryBody({ category, sub }) +
-          /* No `description`: at runtime it is the read-config's list label,
-             which would cost 52 extra requests to fetch here. It is optional,
-             so `collectionPageSchema` simply omits the field — the same
-             schema, one property lighter than the hydrated page's. */
           jsonLd(subCategoryGraph({ category, subCategory: sub })),
       });
     }

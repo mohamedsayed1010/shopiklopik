@@ -1,12 +1,25 @@
 import { lazy } from "react";
 
-/**
 
+export const Login = lazy(() => import("../components/Login/Login"));
+export const Register = lazy(() => import("../components/Register/Register"));
+export const ForgotPassword = lazy(
+  () => import("../components/ForgetPassword/ForgotPassword")
+);
+export const ResetPassword = lazy(
+  () => import("../components/ResetPassword/ResetPassword")
+);
 
- * `React.lazy` needs a literal specifier, so each stays its own `import()`.
- * The boundary that catches all of them is the `<Suspense>` around the outlet
- * in `Layout`.
- */
+export const AboutPage = lazy(() => import("../pages/About"));
+export const ContactPage = lazy(() => import("../pages/Contact"));
+export const TermsPage = lazy(() => import("../pages/Terms"));
+export const PrivacyPage = lazy(() => import("../pages/Privacy"));
+export const NotFound = lazy(() => import("../pages/NotFound"));
+
+export const SubCategories = lazy(
+  () => import("../components/Home/CategoriesSlider/SubCategories/SubCategories")
+);
+export const DynamicListPage = lazy(() => import("../pages/DynamicList"));
 
 /* The reader's own things. */
 export const Profile = lazy(() => import("../pages/Profile/Profile"));

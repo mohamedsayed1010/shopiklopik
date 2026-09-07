@@ -1,11 +1,12 @@
-import { Suspense, useContext, useEffect } from "react";
+import { Suspense, lazy, useContext, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
 import { PageSpinner } from "../ui/Spinner";
 
+const FloatingActions = lazy(() => import("../ui/FloatingActions"));
+
 import Navbar from "../Navbar/Navbar";
 import Footer from "../Footer/Footer";
-import FloatingActions from "../ui/FloatingActions";
 import SiteHead from "../SiteHead";
 import MaintenanceBanner from "../Site/MaintenanceBanner";
 import MaintenanceScreen from "../Site/MaintenanceScreen";
@@ -33,6 +34,16 @@ export default function Layout() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [pathname]);
+
+  useEffect(() => {
+    const warm = () => {
+      import("../ui/FloatingActions");
+    };
+
+    window.addEventListener("scroll", warm, { once: true, passive: true });
+
+    return () => window.removeEventListener("scroll", warm);
+  }, []);
 
   const isBare = BARE_ROUTES.includes(pathname);
 
@@ -74,7 +85,9 @@ export default function Layout() {
 
       {/* Nothing to compose while the site is closed. */}
       {!isBare && !underMaintenance && (
-        <FloatingActions canCompose={canCompose} />
+        <Suspense fallback={null}>
+          <FloatingActions canCompose={canCompose} />
+        </Suspense>
       )}
     </div>
   );

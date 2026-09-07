@@ -1,4 +1,4 @@
-import { useContext, useMemo } from "react";
+import { lazy, Suspense, useContext, useMemo } from "react";
 
 import { AuthContext } from "../../context/AuthContext";
 import BannerCard from "./BannerCard";
@@ -8,12 +8,23 @@ import {
   bannerAspectStyle,
   bannerWidthStyle,
 } from "./bannerFrame";
-import BannerCarousel from "./BannerCarousel";
 import { orderBannersForSession } from "./bannerOrder";
 import { fallbackBannerFor } from "./fallbackBanners";
 import { Skeleton } from "../ui/Skeleton";
+
+const BannerCarousel = lazy(() => import("./BannerCarousel"));
 import { useBannerAvailability } from "../../hooks/useBannerBooking";
 import { useBannerSlot } from "../../hooks/useBanners";
+
+/** The placement's own dimensions, held while something is still arriving. */
+function SlotSkeleton({ placement }) {
+  return (
+    <Skeleton
+      style={bannerAspectStyle(placement)}
+      className={`${BANNER_FRAME} w-full rounded-2xl`}
+    />
+  );
+}
 
 export default function BannerSlot({
   placementKey,
@@ -31,10 +42,6 @@ export default function BannerSlot({
 
   const { token } = useContext(AuthContext);
 
-  /* `/banner-bookings/availability` is an authenticated endpoint: it answers
-     401 without a session. Asking anyway would spend a request to be refused
-     on a page that is public, so it is only asked when there is someone to
-     ask for. */
   const availabilityQuery = useBannerAvailability({
     location: placement?.location,
     categoryId,
@@ -50,11 +57,6 @@ export default function BannerSlot({
 
   const availability = availabilityQuery.data?.data ?? null;
 
-  /* Signed in, the server says whether the placement still has room. Signed
-     out it will not say, so the placement's own `isActive` stands in: a slot
-     that is live and carries nothing published is empty, which is exactly what
-     the promotional card offers. Keeping the card visible is the point — the
-     banner is public, and only the form behind it asks for an account. */
   const hasFreeSlot = token
     ? availability?.isAvailable === true
     : placement?.isActive !== false;
@@ -67,10 +69,7 @@ export default function BannerSlot({
   if (isLoading || (banners.length === 0 && availabilityQuery.isLoading)) {
     return (
       <div style={slotStyle} className={slotClass}>
-        <Skeleton
-          style={bannerAspectStyle(placement)}
-          className={`${BANNER_FRAME} w-full rounded-2xl`}
-        />
+        <SlotSkeleton placement={placement} />
       </div>
     );
   }
@@ -109,12 +108,14 @@ export default function BannerSlot({
 
   return (
     <div style={slotStyle} className={slotClass}>
-      <BannerCarousel
-        banners={published}
-        placement={placement}
-        ctaSlide={ctaSlide}
-        priority={priority}
-      />
+      <Suspense fallback={<SlotSkeleton placement={placement} />}>
+        <BannerCarousel
+          banners={published}
+          placement={placement}
+          ctaSlide={ctaSlide}
+          priority={priority}
+        />
+      </Suspense>
     </div>
   );
 }

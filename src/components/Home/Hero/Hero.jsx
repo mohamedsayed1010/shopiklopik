@@ -4,7 +4,8 @@ import { Plus, ShieldCheck, MapPin, MessagesSquare } from "lucide-react";
 import SearchBox from "../../Search/SearchBox";
 import Button from "../../ui/Button";
 import bg from "../../../assets/bg.jpg";
-import bg1 from "../../../assets/bg1.png";
+import bgWebp from "../../../assets/bg.webp";
+import bg1 from "../../../assets/bg1.webp";
 
 const TRUST_MARKERS = [
   { icon: MapPin, label: "كل احتياجاتك في مكان واحد" },
@@ -24,7 +25,9 @@ export default function Hero() {
   return (
     <section className="relative z-20 isolate border-b border-white/5 bg-brand-900">
       <picture className="contents">
-        <source media="(max-width: 1023px)" srcSet={bg1} />
+        <source media="(max-width: 1023px)" type="image/webp" srcSet={bg1} />
+
+        <source type="image/webp" srcSet={bgWebp} />
 
         <img
           src={bg}
@@ -32,6 +35,7 @@ export default function Hero() {
           aria-hidden="true"
           loading="eager"
           decoding="async"
+          fetchPriority="high"
           className="absolute inset-0 -z-10 h-full w-full object-cover object-[30%_78%] sm:object-[center_85%]"
         />
       </picture>
@@ -58,20 +62,6 @@ export default function Hero() {
         <SearchBox className="mx-auto mt-7 w-[85%]  max-w-xl sm:mt-8" />
 
         {/* Actions — full width on phones so the primary action is unmissable */}
-        {/* <div className="mt-6 flex flex-col items-stretch gap-2.5 sm:flex-row sm:items-center sm:justify-center sm:gap-3">
-          <Button variant="gold" onClick={() => navigate("/create-product")}>
-            <Plus size={18} strokeWidth={2.5} />
-            انشر إعلانك مجاناً
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={scrollToCategories}
-            className="border-white/20 bg-white/5 text-white hover:border-white/30 hover:bg-white/10 hover:text-white"
-          >
-            تصفّح الأقسام
-          </Button>
-        </div> */}
 
         {/* Trust markers */}
         <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2.5 text-[11px] text-brand-200 sm:mt-8 sm:gap-x-6 sm:gap-y-3 sm:text-sm">

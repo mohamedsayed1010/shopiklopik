@@ -25,59 +25,71 @@ export default function useNotificationsRealtime() {
     // The hub rejects anonymous connections; nothing to subscribe to.
     if (!token) return undefined;
 
-    const connection = createNotificationsHubConnection();
+    let cancelled = false;
+
+    let connection = null;
 
     const invalidateList = () =>
       queryClient.invalidateQueries({ queryKey: listKey });
 
-    connection.on(HUB_EVENTS.received, (notification) => {
-      invalidateList();
+    createNotificationsHubConnection()
+      .then((hub) => {
+        if (cancelled) return undefined;
 
-      /* The count usually arrives on its own event a moment later, but a push
-         that only ever fires `ReceiveNotification` must still move the badge. */
-      queryClient.invalidateQueries({ queryKey: countKey });
+        connection = hub;
 
-      publishNotification(notification);
-    });
+        hub.on(HUB_EVENTS.received, (notification) => {
+          invalidateList();
 
-    connection.on(HUB_EVENTS.unreadCountChanged, (count) => {
-      if (typeof count !== "number") return;
+          /* The count usually arrives on its own event a moment later, but a
+             push that only ever fires `ReceiveNotification` must still move
+             the badge. */
+          queryClient.invalidateQueries({ queryKey: countKey });
 
-      const cached = queryClient.getQueryData(countKey);
+          publishNotification(notification);
+        });
 
-      if (!cached) {
-        queryClient.invalidateQueries({ queryKey: countKey });
+        hub.on(HUB_EVENTS.unreadCountChanged, (count) => {
+          if (typeof count !== "number") return;
 
-        return;
-      }
+          const cached = queryClient.getQueryData(countKey);
 
-      queryClient.setQueryData(countKey, {
-        ...cached,
-        data: count,
+          if (!cached) {
+            queryClient.invalidateQueries({ queryKey: countKey });
+
+            return;
+          }
+
+          queryClient.setQueryData(countKey, {
+            ...cached,
+            data: count,
+          });
+        });
+
+        /* A reconnect means the socket was down for a while, and any push sent
+           in that window is simply gone — the hub does not replay. Re-reading
+           both queries is the only way back to the truth. */
+        hub.onreconnected(() => {
+          invalidateList();
+
+          /* Same reasoning for every other subscriber: a push sent while the
+             socket was down is gone, so anything relying on pushes has to
+             re-read rather than wait for one that will never arrive. */
+          queryClient.invalidateQueries({ queryKey: countKey });
+
+          publishReconnected();
+        });
+
+        return hub.start();
+      })
+      .catch(() => {
       });
-    });
-
-    /* A reconnect means the socket was down for a while, and any push sent in
-       that window is simply gone — the hub does not replay. Re-reading both
-       queries is the only way back to the truth. */
-    connection.onreconnected(() => {
-      invalidateList();
-
-      queryClient.invalidateQueries({ queryKey: countKey });
-
-      /* Same reasoning for every other subscriber: a push sent while the
-         socket was down is gone, so anything relying on pushes has to re-read
-         rather than wait for one that will never arrive. */
-      publishReconnected();
-    });
-
-    connection.start().catch(() => {
-      /* Realtime is an enhancement over the existing polling-on-focus path;
-         if the socket cannot be established the app still works, so this is
-         deliberately silent rather than a toast the user cannot act on. */
-    });
 
     return () => {
+      cancelled = true;
+
+      if (!connection) return;
+
       connection.off(HUB_EVENTS.received);
       connection.off(HUB_EVENTS.unreadCountChanged);
 

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 import mark from "../../assets/logo-mark.png";
+import markWebp from "../../assets/logo-mark.webp";
 import { APP_NAME } from "../../utils/brand";
 
 const [BRAND_LEAD, ...BRAND_TAIL] = APP_NAME.split(" ");
@@ -39,6 +40,31 @@ const SIZES = {
   },
 };
 
+function Mark({ src, alt, className }) {
+  const image = (
+    <img
+      src={src || mark}
+      alt={alt}
+      width={192}
+      height={192}
+      // Eager: the logo is above the fold on every screen and a late-loading
+      // logo is the clearest possible "unfinished" signal.
+      loading="eager"
+      decoding="async"
+      className={className}
+    />
+  );
+
+  if (src) return image;
+
+  return (
+    <picture className="contents">
+      <source type="image/webp" srcSet={markWebp} />
+      {image}
+    </picture>
+  );
+}
+
 export default function Logo({
   size = "md",
   tone = "light",
@@ -55,15 +81,9 @@ export default function Logo({
 
   const content = (
     <>
-      <img
-        src={src || mark}
+      <Mark
+        src={src}
         alt=""
-        width={192}
-        height={192}
-        // Eager: the logo is above the fold on every screen and a late-loading
-        // logo is the clearest possible "unfinished" signal.
-        loading="eager"
-        decoding="async"
         className={`${scale.mark} ${
           isLight ? MARK_PLATE.light : MARK_PLATE.dark
         } shrink-0 object-contain`}
@@ -119,13 +139,8 @@ export default function Logo({
 
 export function LogoMark({ className = "h-12 w-12", tone = "dark" }) {
   return (
-    <img
-      src={mark}
+    <Mark
       alt={APP_NAME}
-      width={192}
-      height={192}
-      loading="eager"
-      decoding="async"
       className={`${className} ${
         tone === "light" ? MARK_PLATE.light : MARK_PLATE.dark
       } shrink-0 object-contain`}

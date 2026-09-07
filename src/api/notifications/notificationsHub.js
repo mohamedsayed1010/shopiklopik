@@ -1,9 +1,3 @@
-import {
-  HubConnectionBuilder,
-  HttpTransportType,
-  LogLevel,
-} from "@microsoft/signalr";
-
 import { API_BASE_URL } from "../axiosInstance";
 
 export const NOTIFICATIONS_HUB_URL = new URL(
@@ -17,7 +11,11 @@ export const HUB_EVENTS = {
   unreadCountChanged: "UnreadCountChanged",
 };
 
-export function createNotificationsHubConnection() {
+export async function createNotificationsHubConnection() {
+  const { HubConnectionBuilder, HttpTransportType, LogLevel } = await import(
+    "@microsoft/signalr"
+  );
+
   return new HubConnectionBuilder()
     .withUrl(NOTIFICATIONS_HUB_URL, {
       accessTokenFactory: () => localStorage.getItem("accessToken") ?? "",

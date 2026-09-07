@@ -5,9 +5,12 @@ import "./index.css";
 import App from "./App.jsx";
 import { HelmetProvider } from "react-helmet-async";
 
-registerSW({
-  immediate: true,
-});
+function registerServiceWorker() {
+  registerSW({ immediate: true });
+}
+
+if (document.readyState === "complete") registerServiceWorker();
+else window.addEventListener("load", registerServiceWorker, { once: true });
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
