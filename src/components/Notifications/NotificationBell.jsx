@@ -1,12 +1,20 @@
-import { useState } from "react";
+import { Suspense, lazy, useState } from "react";
 import { Bell } from "lucide-react";
 
 import { useUnreadCount } from "./useNotifications";
 import useNotificationsRealtime from "./useNotificationsRealtime";
-import NotificationsDrawer from "./NotificationsDrawer";
+const NotificationsDrawer = lazy(() => import("./NotificationsDrawer"));
 
 export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
+
+  const [drawerMounted, setDrawerMounted] = useState(false);
+
+  if (isOpen && !drawerMounted) setDrawerMounted(true);
+
+  const warmDrawer = () => {
+    import("./NotificationsDrawer");
+  };
 
   // Only the badge count. The list itself is the drawer's business, and the
   // bell is mounted on every page.
@@ -24,6 +32,8 @@ export default function NotificationBell() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
+        onPointerEnter={warmDrawer}
+        onFocus={warmDrawer}
         aria-label={
           unreadCount > 0
             ? `الإشعارات، ${unreadCount} غير مقروء`
@@ -53,7 +63,14 @@ export default function NotificationBell() {
         )}
       </button>
 
-      <NotificationsDrawer isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      {drawerMounted && (
+        <Suspense fallback={null}>
+          <NotificationsDrawer
+            isOpen={isOpen}
+            onClose={() => setIsOpen(false)}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

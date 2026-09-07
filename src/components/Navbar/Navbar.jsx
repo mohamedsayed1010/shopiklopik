@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from "react";
+import { Suspense, lazy, useContext, useMemo, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import {
@@ -27,11 +27,13 @@ import {
 } from "lucide-react";
 
 import NotificationBell from "../Notifications/NotificationBell";
+
+const Drawer = lazy(() => import("../ui/Drawer"));
+
+const IOSInstallModal = lazy(() => import("../IOSInstallModal/IOSInstallModal"));
 import ThemeToggle from "../ui/ThemeToggle";
 import { AuthContext } from "../../context/AuthContext";
 import { PWAInstallContext } from "../../context/PWAInstallContext";
-import IOSInstallModal from "../IOSInstallModal/IOSInstallModal";
-import Drawer from "../ui/Drawer";
 import Button from "../ui/Button";
 import Logo from "../ui/Logo";
 import useSiteSettings from "../../hooks/useSiteSettings";
@@ -135,6 +137,19 @@ export default function Navbar() {
     useContext(PWAInstallContext);
 
   const closeDrawer = () => setOpen(false);
+
+  /* Latch once opened, so the lazy overlay stays mounted and can animate
+     itself closed rather than vanishing. */
+  const [drawerMounted, setDrawerMounted] = useState(false);
+
+  if (open && !drawerMounted) setDrawerMounted(true);
+
+  /* Fetch the overlay on the first hint of intent — a pointer entering the
+     menu button, or the button taking focus — rather than on a timer during
+     load. Costs nothing on a page nobody opens the menu on. */
+  const warmDrawer = () => {
+    import("../ui/Drawer");
+  };
 
   const handleInstall = () => {
     closeDrawer();
@@ -246,6 +261,8 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setOpen(true)}
+              onPointerEnter={warmDrawer}
+              onFocus={warmDrawer}
               aria-label="فتح القائمة"
               aria-expanded={open}
               className="flex h-10 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 pe-2.5 ps-1.5 text-white transition-colors duration-200 hover:border-white/25 hover:bg-white/10 sm:gap-2 sm:pe-3"
@@ -265,7 +282,9 @@ export default function Navbar() {
       </header>
 
       {/* Menu */}
-      <Drawer open={open} onClose={closeDrawer} side="start">
+      {drawerMounted && (
+        <Suspense fallback={null}>
+          <Drawer open={open} onClose={closeDrawer} side="start">
         <div className="relative border-b border-line bg-brand-900 px-5 py-5">
           <button
             type="button"
@@ -427,12 +446,18 @@ export default function Navbar() {
             </button>
           </div>
         )}
-      </Drawer>
+          </Drawer>
+        </Suspense>
+      )}
 
-      <IOSInstallModal
-        open={showIOSModal}
-        onClose={() => setShowIOSModal(false)}
-      />
+      {showIOSModal && (
+        <Suspense fallback={null}>
+          <IOSInstallModal
+            open={showIOSModal}
+            onClose={() => setShowIOSModal(false)}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

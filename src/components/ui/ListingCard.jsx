@@ -1,11 +1,14 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, memo, useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart, Images, MapPin, Share2, Sparkles, Star } from "lucide-react";
 
 import Image from "./Image";
-import ShareModal from "./ShareModal";
 import ViewsChip from "./ViewsChip";
-import QuickPreview, { supportsHoverPreview } from "./QuickPreview";
+import { supportsHoverPreview } from "./hoverPreview";
+
+const QuickPreview = lazy(() => import("./QuickPreview"));
+
+const ShareModal = lazy(() => import("./ShareModal"));
 import useFavorite from "../../hooks/useFavorite";
 import { useCardRating } from "../../hooks/useAdvertisementRating";
 import { formatRelativeTime } from "../../utils/format";
@@ -158,6 +161,16 @@ function ListingCard({
   const [isShareOpen, setShareOpen] = useState(false);
 
   const [anchor, setAnchor] = useState(null);
+
+  /* Latch each overlay on first use so the lazy component stays mounted and
+     can animate itself closed. */
+  const [previewMounted, setPreviewMounted] = useState(false);
+
+  const [shareMounted, setShareMounted] = useState(false);
+
+  if (anchor && !previewMounted) setPreviewMounted(true);
+
+  if (isShareOpen && !shareMounted) setShareMounted(true);
 
   const openTimer = useRef(null);
 
@@ -360,23 +373,31 @@ function ListingCard({
      swallows clicks. */
   const overlays = (
     <>
-      <QuickPreview
-        card={card}
-        anchor={anchor}
-        isSaved={isSaved}
-        onToggleSave={handleSave}
-        onShare={handleShare}
-        onPointerEnter={clearTimers}
-        onPointerLeave={scheduleClose}
-        onClose={closeNow}
-      />
+      {previewMounted && (
+        <Suspense fallback={null}>
+          <QuickPreview
+            card={card}
+            anchor={anchor}
+            isSaved={isSaved}
+            onToggleSave={handleSave}
+            onShare={handleShare}
+            onPointerEnter={clearTimers}
+            onPointerLeave={scheduleClose}
+            onClose={closeNow}
+          />
+        </Suspense>
+      )}
 
-      <ShareModal
-        open={isShareOpen}
-        onClose={() => setShareOpen(false)}
-        url={shareUrl}
-        title={card.title}
-      />
+      {shareMounted && (
+        <Suspense fallback={null}>
+          <ShareModal
+            open={isShareOpen}
+            onClose={() => setShareOpen(false)}
+            url={shareUrl}
+            title={card.title}
+          />
+        </Suspense>
+      )}
     </>
   );
 

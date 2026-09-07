@@ -22,13 +22,7 @@ const GAP = 14;
 
 const MARGIN = 12;
 
-export function supportsHoverPreview() {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(hover: hover) and (pointer: fine)").matches
-  );
-}
+export { supportsHoverPreview } from "./hoverPreview";
 
 function place(anchor, height) {
   const viewportWidth = window.innerWidth;
