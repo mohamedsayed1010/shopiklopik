@@ -4,6 +4,7 @@ import { registerAppRoutes } from "./routeRegistry";
 import Layout from "../components/Layout/Layout";
 import ProtectedRoute from './../components/ProtectedRoute/ProtectedRoute';
 import AdminRoute from "../components/AdminRoute/AdminRoute";
+import ProfileCompletionGuard from "../components/ProfileCompletionGuard/ProfileCompletionGuard";
 import Home from "../pages/Home/index";
 
 /* Fetched on arrival instead of with the app — see `./lazyRoutes` for which
@@ -21,6 +22,7 @@ import {
   PrivacyPage,
   NotFound,
   Profile,
+  EditProfilePage,
   FavoritesPage,
   NotificationSettingsPage,
   ReferralsPage,
@@ -52,7 +54,12 @@ import {
 } from "./lazyRoutes";
 
 const routes = [
-  {path: "", element: <Layout/>, children: [
+  /* Every address in the app is a child of this one, which is what makes the
+     completion guard total: an account still missing required data is turned
+     back before the page under it renders — whether it arrived by link, by
+     typed address, by history or in a second tab. `ProtectedRoute` and
+     `AdminRoute` below still apply on top of it. */
+  {path: "", element: <ProfileCompletionGuard><Layout/></ProfileCompletionGuard>, children: [
     {index: true, element: <Home/>},
     {path:"create-product", element: <ProtectedRoute> <CreateAd/> </ProtectedRoute>},
     {path:"create-product/:categoryId", element: <ProtectedRoute> <CategoryDetails/> </ProtectedRoute>},
@@ -174,6 +181,11 @@ const routes = [
     {path: "/forgot-password", element: <ForgotPassword/>},
     {path: "/reset-password", element: <ResetPassword/>},
     {path: "/profile", element: <ProtectedRoute><Profile/></ProtectedRoute>},
+
+    /* The profile form, addressable. It is where `ProfileCompletionGuard`
+       sends an account that still owes required data, and the one page that
+       guard lets through — signed in, like everything else under /profile. */
+    {path: "/profile/edit", element: <ProtectedRoute><EditProfilePage/></ProtectedRoute>},
 
     // Anything unmatched lands here rather than on a blank page under a
     // working navbar. Kept last so it never shadows a real route.

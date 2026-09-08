@@ -8,6 +8,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { loginUser } from "../../api/auth/login";
 import { reportFormikApiError } from "../../utils/reportApiError";
+import { redirectTarget, AUTH_PATHS } from "../../utils/redirectTarget";
 
 export default function useLogin() {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,21 +17,10 @@ export default function useLogin() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  /* Where the reader was headed before the guard sent them here. Only a
-     same-site path is honoured — an absolute URL in router state would be an
-     open redirect — and everything else falls back to the home page. */
-  const from = (() => {
-    const target = location.state?.from;
-
-    const path =
-      typeof target === "string"
-        ? target
-        : target?.pathname
-          ? `${target.pathname}${target.search ?? ""}${target.hash ?? ""}`
-          : "";
-
-    return path.startsWith("/") && !path.startsWith("//") ? path : "/";
-  })();
+  /* Where the reader was headed before the guard sent them here. The profile
+     completion form answers the same question when it is done, so the
+     sanitising moved to `redirectTarget` and both callers share it. */
+  const from = redirectTarget(location.state?.from, { avoid: AUTH_PATHS });
 
   const formik = useFormik({
     initialValues: {

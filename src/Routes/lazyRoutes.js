@@ -23,6 +23,12 @@ export const DynamicListPage = lazy(() => import("../pages/DynamicList"));
 
 /* The reader's own things. */
 export const Profile = lazy(() => import("../pages/Profile/Profile"));
+
+/* The profile form as a page — and the one destination an account short of its
+   required data may open. See `ProfileCompletionGuard`. */
+export const EditProfilePage = lazy(
+  () => import("../pages/Profile/updateprofile/EditProfilePage")
+);
 export const FavoritesPage = lazy(() => import("../pages/Favorites"));
 export const NotificationSettingsPage = lazy(
   () => import("../pages/NotificationSettings")

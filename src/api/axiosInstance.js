@@ -81,6 +81,11 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry ||
       originalRequest.url?.includes("/auth/login") ||
       originalRequest.url?.includes("/auth/register") ||
+      /* Signing in with Google, and reading the client it runs against. A 401
+         here is that sign-in being refused, not the current session expiring —
+         refreshing a stale one and retrying would answer the wrong question,
+         and could sign the reader out of the screen they are signing in on. */
+      originalRequest.url?.includes("/auth/google") ||
       originalRequest.url?.includes("/auth/refresh-token")
     ) {
       return Promise.reject(error);
