@@ -9,6 +9,9 @@ import { PageSpinner } from "../ui/Spinner";
 /** The one address an account short of its required data may still open. */
 export const PROFILE_COMPLETION_PATH = "/profile/edit";
 
+/** The public account-deletion page — see `pages/DeleteAccount`. */
+const ACCOUNT_DELETION_PATH = "/delete-account";
+
 /**
  * An account the application still wants information from gets one destination
  * until it has given it: the profile form.
@@ -41,6 +44,10 @@ export default function ProfileCompletionGuard({ children }) {
      still loading, because the page renders that state itself. Blocking it
      would leave the reader nowhere to go. */
   if (location.pathname.startsWith(PROFILE_COMPLETION_PATH)) return children;
+
+  /* So is closing the account. Leaving must not depend on first supplying the
+     data of the account being closed. */
+  if (location.pathname === ACCOUNT_DELETION_PATH) return children;
 
   if (status === "complete") return children;
 

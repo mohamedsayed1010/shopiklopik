@@ -16,6 +16,9 @@ export const TermsPage = lazy(() => import("../pages/Terms"));
 export const PrivacyPage = lazy(() => import("../pages/Privacy"));
 export const NotFound = lazy(() => import("../pages/NotFound"));
 
+/* Public — the Google Play account-deletion URL. See the page itself. */
+export const DeleteAccountPage = lazy(() => import("../pages/DeleteAccount"));
+
 export const SubCategories = lazy(
   () => import("../components/Home/CategoriesSlider/SubCategories/SubCategories")
 );

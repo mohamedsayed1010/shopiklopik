@@ -23,10 +23,12 @@ const QUICK_LINKS = [
   { key: "contact", to: "/contact", label: "تواصل معنا" },
 ];
 
-/** The two pages whose whole content is a stored settings field. */
+/** The two pages whose whole content is a stored settings field, and the
+    public account-deletion page the Google Play listing points to. */
 const LEGAL_LINKS = [
   { key: "terms", to: "/terms", label: "الشروط والأحكام" },
   { key: "privacy", to: "/privacy", label: "سياسة الخصوصية" },
+  { key: "delete-account", to: "/delete-account", label: "حذف الحساب" },
 ];
 
 const DEVELOPERS = [

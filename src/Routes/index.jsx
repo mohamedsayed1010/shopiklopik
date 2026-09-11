@@ -20,6 +20,7 @@ import {
   ContactPage,
   TermsPage,
   PrivacyPage,
+  DeleteAccountPage,
   NotFound,
   Profile,
   EditProfilePage,
@@ -175,6 +176,11 @@ const routes = [
     {path: "contact", element: <ContactPage/>},
     {path: "terms", element: <TermsPage/>},
     {path: "privacy", element: <PrivacyPage/>},
+
+    // The account-deletion page Google Play links to. Deliberately NOT behind
+    // `ProtectedRoute`: anyone may read how deletion works. The deletion itself
+    // is signed-in only — the page renders its form only with a session.
+    {path: "delete-account", element: <DeleteAccountPage/>},
 
     {path: "/register", element: <Register/>},
     {path: "/login", element: <Login/>},

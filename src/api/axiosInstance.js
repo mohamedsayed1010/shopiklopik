@@ -86,6 +86,20 @@ axiosInstance.interceptors.response.use(
          refreshing a stale one and retrying would answer the wrong question,
          and could sign the reader out of the screen they are signing in on. */
       originalRequest.url?.includes("/auth/google") ||
+      /* Signing out. A 401 here means the session is already gone — an account
+         that was just deactivated, say. Refreshing only to sign out would be
+         backwards, and a failed refresh hard-redirects to /login, pre-empting
+         the caller's own navigation. `AuthContext.logout` clears the session
+         whatever this call answers. */
+      originalRequest.url?.includes("/auth/logout") ||
+      /* Closing the account. The endpoint re-checks the password and answers a
+         wrong one with 401 ("كلمة السر غلط.") — the password being refused, not
+         the session expiring. Refreshing and retrying would send the password
+         twice and count every failed attempt double against the rate limit.
+         The access token is kept fresh ahead of expiry by
+         `checkTokenExpiration`, so a real expiry here is not the likely 401. */
+      (originalRequest.url === "/api/account" &&
+        originalRequest.method === "delete") ||
       originalRequest.url?.includes("/auth/refresh-token")
     ) {
       return Promise.reject(error);

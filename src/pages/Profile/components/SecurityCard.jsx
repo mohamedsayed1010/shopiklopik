@@ -1,4 +1,5 @@
-import { KeyRound, Lock, ShieldCheck } from "lucide-react";
+import { Link } from "react-router-dom";
+import { KeyRound, Lock, ShieldCheck, Trash2 } from "lucide-react";
 
 import Button from "../../../components/ui/Button";
 
@@ -49,6 +50,17 @@ export default function SecurityCard({ onChangePassword }) {
         >
           <KeyRound size={16} />
           تغيير كلمة المرور
+        </Button>
+
+        <Button
+          as={Link}
+          to="/delete-account"
+          variant="danger-ghost"
+          fullWidth
+          className="mt-2"
+        >
+          <Trash2 size={16} />
+          حذف الحساب
         </Button>
       </div>
     </section>
