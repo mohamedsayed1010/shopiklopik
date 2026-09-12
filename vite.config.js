@@ -175,6 +175,11 @@ export default defineConfig({
           /^\/robots\.txt$/,
           /^\/sitemap\.xml$/,
           /^\/\.well-known\//,
+
+    
+          /^\/(about|contact|terms|privacy)\/?$/,
+          /^\/category\/\d+\/?$/,
+          /^\/dynamic\/\d+\/\d+\/?$/,
         ],
       },
 
