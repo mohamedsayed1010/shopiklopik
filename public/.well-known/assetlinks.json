@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.shopiklopik.app",
+      "sha256_cert_fingerprints": [
+        "64:BC:FF:24:D3:0E:3A:54:65:A6:DE:0B:B5:45:5F:8A:86:E6:E8:62:68:54:7F:F1:78:AB:80:05:6F:06:F7:70"
+      ]
+    }
+  }
+]
