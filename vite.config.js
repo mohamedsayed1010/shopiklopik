@@ -98,6 +98,68 @@ function heroPreload() {
   };
 }
 
+function startAppAfterFirstPaint() {
+  const ENTRY = /<script type="module" crossorigin src="([^"]+)"><\/script>/;
+
+  const PRELOAD = /\s*<link rel="modulepreload" crossorigin href="([^"]+)">/g;
+
+  return {
+    name: "start-app-after-first-paint",
+    apply: "build",
+    enforce: "post",
+
+    transformIndexHtml: {
+      order: "post",
+
+      handler(html) {
+        const entry = html.match(ENTRY);
+
+        if (!entry) {
+          this.warn("[start-app-after-first-paint] entry script not found — left as is.");
+
+          return html;
+        }
+
+        const preloads = [...html.matchAll(PRELOAD)].map((match) => match[1]);
+
+        const loader = `(function () {
+  var started = false;
+  function start() {
+    if (started) return;
+    started = true;
+    ${JSON.stringify(preloads)}.forEach(function (href) {
+      var link = document.createElement("link");
+      link.rel = "modulepreload";
+      link.crossOrigin = "anonymous";
+      link.href = href;
+      document.head.appendChild(link);
+    });
+    var script = document.createElement("script");
+    script.type = "module";
+    script.crossOrigin = "anonymous";
+    script.src = ${JSON.stringify(entry[1])};
+    document.head.appendChild(script);
+  }
+  var canObserve =
+    typeof PerformanceObserver !== "undefined" &&
+    PerformanceObserver.supportedEntryTypes &&
+    PerformanceObserver.supportedEntryTypes.indexOf("paint") !== -1;
+  if (!canObserve) return start();
+  new PerformanceObserver(function (list) {
+    if (list.getEntriesByName("first-contentful-paint").length) start();
+  }).observe({ type: "paint", buffered: true });
+  setTimeout(start, 1500);
+})();`;
+
+        return html
+          .replace(entry[0], "")
+          .replace(PRELOAD, "")
+          .replace("</head>", `  <script>${loader}</script>\n  </head>`);
+      },
+    },
+  };
+}
+
 export default defineConfig({
   build: {
     assetsInlineLimit: (filePath) =>
@@ -140,6 +202,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     heroPreload(),
+    startAppAfterFirstPaint(),
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: "auto",

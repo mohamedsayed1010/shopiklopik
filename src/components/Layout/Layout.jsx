@@ -4,7 +4,9 @@ import {
   useContext,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
+  useState,
 } from "react";
 import { Outlet, useLocation, useNavigationType } from "react-router-dom";
 
@@ -120,14 +122,14 @@ export default function Layout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key]);
 
+  const [hasScrolled, setHasScrolled] = useState(false);
+
   useEffect(() => {
-    const warm = () => {
-      import("../ui/FloatingActions");
-    };
+    const onFirstScroll = () => setHasScrolled(true);
 
-    window.addEventListener("scroll", warm, { once: true, passive: true });
+    window.addEventListener("scroll", onFirstScroll, { once: true, passive: true });
 
-    return () => window.removeEventListener("scroll", warm);
+    return () => window.removeEventListener("scroll", onFirstScroll);
   }, []);
 
   const isBare = BARE_ROUTES.includes(pathname);
@@ -143,33 +145,50 @@ export default function Layout() {
     user?.role !== "admin" &&
     !pathname.startsWith("/create-product");
 
+  const showFloatingActions =
+    hasScrolled ||
+    (canCompose && window.matchMedia("(min-width: 1024px)").matches);
+
+  const parts = useMemo(
+    () => ({
+      siteHead: <SiteHead />,
+      navbar: <Navbar />,
+      urgentBar: <UrgentBar />,
+      maintenanceBanner: <MaintenanceBanner />,
+      page: (
+        <Suspense fallback={<PageSpinner />}>
+          <Outlet />
+        </Suspense>
+      ),
+      footer: <Footer />,
+    }),
+    []
+  );
+
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
       {/* Favicon and sharing metadata, driven by the platform settings. Renders
           nothing; mounted once here so no page has to think about them. */}
-      <SiteHead />
+      {parts.siteHead}
 
-      {!isBare && <Navbar />}
+      {!isBare && parts.navbar}
 
-      {!isBare && !underMaintenance && <UrgentBar />}
+      {!isBare && !underMaintenance && parts.urgentBar}
 
-      {!isBare && <MaintenanceBanner />}
+      {!isBare && parts.maintenanceBanner}
 
       <main className="flex-1">
         {underMaintenance ? (
           <MaintenanceScreen message={settings.maintenanceMessage} />
         ) : (
-
-          <Suspense fallback={<PageSpinner />}>
-            <Outlet />
-          </Suspense>
+          parts.page
         )}
       </main>
 
-      {!isBare && <Footer />}
+      {!isBare && parts.footer}
 
       {/* Nothing to compose while the site is closed. */}
-      {!isBare && !underMaintenance && (
+      {!isBare && !underMaintenance && showFloatingActions && (
         <Suspense fallback={null}>
           <FloatingActions canCompose={canCompose} />
         </Suspense>

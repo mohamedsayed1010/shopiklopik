@@ -140,23 +140,71 @@ function jsonLd(graph) {
    column (name, description, list of links) read as the site footer arriving
    first. Same text and links as before; the colours come from the stylesheet's
    own tokens so the saved theme applies. */
-const HOME_BAR_STYLE = [
-  "height:4rem",
-  "display:flex",
-  "align-items:center",
-  "padding:0 1rem",
-  "background:#041b3d",
-  "border-bottom:1px solid rgba(255,255,255,.1)",
-  "color:#fff",
-  "font-weight:700",
-].join(";");
+const HERO_LINES = ["كل ما تبحث عنه في الفيوم", "في مكان واحد"];
 
-const HOME_HERO_STYLE = [
-  "background:#041b3d",
-  "color:#fff",
-  "text-align:center",
-  "padding:1.75rem 1rem 2.5rem",
-].join(";");
+const HERO_SUBTITLE = "نحن همزة الوصل بين كل منتج والمستهلك";
+
+const HERO_MARKERS = [
+  "كل احتياجاتك في مكان واحد",
+  "تواصل مباشر مع البائع",
+  "بدون عمولة",
+];
+
+/** The hero picture sources, read from the preload tags vite-config wrote. */
+function heroSources(shell) {
+  const tags = shell.match(/<link[^>]*data-hero-preload="true"[^>]*>/g) ?? [];
+
+  const pick = (media) => {
+    const tag = tags.find((t) => t.includes(`media="${media}"`));
+
+    return tag?.match(/href="([^"]+)"/)?.[1] ?? null;
+  };
+
+  return {
+    mobile: pick("(max-width: 1023px)"),
+    desktop: pick("(min-width: 1024px)"),
+  };
+}
+
+function homeTop({ name, hero }) {
+  const [lead, ...tail] = String(name || "شوبيك لوبيك").split(" ");
+
+  const picture =
+    hero.mobile && hero.desktop
+      ? [
+          `<picture class="contents">`,
+          `<source media="(max-width: 1023px)" type="image/webp" srcset="${escapeHtml(hero.mobile)}" />`,
+          `<source type="image/webp" srcset="${escapeHtml(hero.desktop)}" />`,
+          `<img data-shell-hero src="${escapeHtml(hero.desktop)}" alt="" aria-hidden="true" loading="eager" decoding="async" fetchpriority="high" class="absolute inset-0 -z-10 h-full w-full object-cover object-[30%_78%] sm:object-[center_85%]" />`,
+          `</picture>`,
+        ].join("")
+      : "";
+
+  const markers = HERO_MARKERS.map(
+    (label) =>
+      `<li class="flex items-center gap-1.5 sm:gap-2"><span aria-hidden="true" class="shrink-0" style="display:inline-block;width:14px;height:14px"></span>${escapeHtml(label)}</li>`
+  ).join("");
+
+  return [
+    `<header class="sticky top-0 z-50 border-b border-white/10 bg-brand-900">`,
+    `<div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6 lg:h-[68px] lg:px-8">`,
+    // The logo's plate without the image (that comes from the settings), then the wordmark.
+    `<span aria-hidden="true" class="flex shrink-0 items-center gap-2.5"><span class="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-white/5 ring-1 ring-gold-300/25 shrink-0"></span><span class="flex min-w-0 flex-col"><span class="text-lg sm:text-xl font-bold leading-tight tracking-tight"><span class="text-white">${escapeHtml(lead)}</span><span class="text-gold-300">&nbsp;${escapeHtml(tail.join(" "))}</span></span></span></span>`,
+    `</div>`,
+    `</header>`,
+    `<section aria-hidden="true" class="relative z-20 isolate border-b border-white/5 bg-brand-900">`,
+    picture,
+    `<div class="absolute inset-0 -z-10 bg-brand-950/22"></div>`,
+    `<div class="mx-auto max-w-3xl px-4 py-7 text-center sm:px-6 sm:py-10 lg:py-12">`,
+    `<p class="text-[25px] font-bold leading-snug tracking-tight text-white sm:text-4xl">${escapeHtml(HERO_LINES[0])}<span class="block text-gold-300">${escapeHtml(HERO_LINES[1])}</span></p>`,
+    `<p class="mx-auto mt-3.5 max-w-xl text-[13px] leading-6 text-brand-200 sm:mt-4 sm:text-base sm:leading-7">${escapeHtml(HERO_SUBTITLE)}</p>`,
+    // The search field's outline only — it is not a control until the app runs.
+    `<div class="relative mx-auto mt-7 w-[85%] max-w-xl sm:mt-8"><div class="flex items-center gap-1.5 sm:gap-2 rounded-2xl bg-transparent p-1.5 shadow-lg sm:p-2 ring-2 ring-gold-300/60"><span class="h-11 min-w-0 flex-1"></span></div></div>`,
+    `<ul class="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2.5 text-[11px] text-brand-200 sm:mt-8 sm:gap-x-6 sm:gap-y-3 sm:text-sm">${markers}</ul>`,
+    `</div>`,
+    `</section>`,
+  ].join("\n    ");
+}
 
 const HOME_CARD_STYLE = [
   "display:block",
@@ -170,7 +218,7 @@ const HOME_CARD_STYLE = [
   "text-decoration:none",
 ].join(";");
 
-function homeBody({ settings, tree }) {
+function homeBody({ settings, tree, hero }) {
   const name = settings?.siteName || settings?.siteNameEn || "";
 
   const items = tree
@@ -181,15 +229,13 @@ function homeBody({ settings, tree }) {
     .join("\n          ");
 
   return [
-    `<div style="min-height:100vh;background:var(--color-canvas,#eff6ff);font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;line-height:1.8">`,
-    `  <div aria-hidden="true" style="${HOME_BAR_STYLE}">${escapeHtml(name)}</div>`,
-    `  <section style="${HOME_HERO_STYLE}">`,
-    `    <h1 style="margin:0;font-size:1.6rem;line-height:1.4">${escapeHtml(name)}</h1>`,
+    `<div class="flex min-h-screen flex-col bg-canvas" style="font-family:'IBM Plex Sans Arabic',system-ui,sans-serif">`,
+    `  ${homeTop({ name, hero })}`,
+    `  <div style="max-width:80rem;margin:0 auto;padding:2rem 1rem 4rem;line-height:1.8">`,
+    `    <h1 style="margin:0;font-size:1.6rem;line-height:1.4;color:var(--color-ink,#101828)">${escapeHtml(name)}</h1>`,
     settings?.description
-      ? `    <p style="margin:.75rem auto 0;max-width:36rem;font-size:.875rem;color:#c2d1e6">${escapeHtml(settings.description)}</p>`
+      ? `    <p style="margin:.75rem 0 2rem;max-width:36rem;font-size:.875rem;color:var(--color-muted,#667085)">${escapeHtml(settings.description)}</p>`
       : "",
-    `  </section>`,
-    `  <div style="max-width:80rem;margin:0 auto;padding:2rem 1rem 4rem">`,
     `    <h2 style="margin:0 0 1rem;font-size:1.25rem;color:var(--color-ink,#101828)">الأقسام</h2>`,
     `    <ul style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(9rem,1fr));gap:.75rem">`,
     `          ${items}`,
@@ -378,7 +424,9 @@ async function main() {
     title: suffix("سوق الفيوم الإلكتروني"),
     description: oneLine(settings?.description) || siteName,
     image,
-    body: homeBody({ settings, tree }) + jsonLd(homeGraph({ settings })),
+    body:
+      homeBody({ settings, tree, hero: heroSources(shell) }) +
+      jsonLd(homeGraph({ settings })),
   });
 
   for (const category of tree) {

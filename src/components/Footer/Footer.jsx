@@ -418,7 +418,7 @@ export default function Footer() {
 
   return (
     <>
-      <footer className="relative isolate overflow-hidden border-t border-white/10 bg-gradient-to-b from-brand-900 via-brand-950 to-[#010b1a]">
+      <footer className="relative isolate overflow-hidden border-t border-white/10 bg-gradient-to-b from-brand-900 via-brand-950 to-[#010b1a] [content-visibility:auto] [contain-intrinsic-size:auto_40rem]">
         {/* Animated gradient hairline along the top edge. */}
         <span
           aria-hidden="true"

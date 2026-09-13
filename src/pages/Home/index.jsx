@@ -10,9 +10,15 @@ import RecentlyViewed from "../../components/Home/RecentlyViewed/RecentlyViewed"
 import HomeListingSections from "../../components/Home/ListingSections/index";
 import { PLACEMENT_KEYS } from "../../utils/bannerPlacements";
 
-export default function Home() {
+/* Who the site is, from the same settings the footer prints. Its own component
+   so the settings arriving re-render this tag alone, not the whole page. */
+function HomeStructuredData() {
   const { settings } = useSiteSettings();
 
+  return <JsonLd data={homeGraph({ settings })} />;
+}
+
+export default function Home() {
   return (
     <>
       {/* The one page whose title is the site-s own positioning rather than a
@@ -20,8 +26,7 @@ export default function Home() {
           the administrator-s own wording from the settings. */}
       <Seo title="سوق الفيوم الإلكتروني" />
 
-      {/* Who the site is, from the same settings the footer prints. */}
-      <JsonLd data={homeGraph({ settings })} />
+      <HomeStructuredData />
 
       <Hero />
 
