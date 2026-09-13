@@ -103,7 +103,7 @@ function FooterLink({ link }) {
   );
 
   const className =
-    "group/link inline-flex items-center gap-2 py-1 text-sm text-brand-200 transition-colors duration-300 ease-out hover:text-white";
+    "group/link inline-flex min-h-11 items-center gap-2 text-sm text-brand-200 transition-colors duration-300 ease-out hover:text-white";
 
   const marker = (
     <span
@@ -474,7 +474,9 @@ export default function Footer() {
                         {...(item.external
                           ? { target: "_blank", rel: "noreferrer" }
                           : {})}
-                        className={`truncate transition-colors duration-300 ease-out hover:text-gold-300 ${
+                        /* 44px tall to the finger, 20px to the row: the
+                           padding is handed back by the negative margin. */
+                        className={`-my-3 truncate py-3 transition-colors duration-300 ease-out hover:text-gold-300 ${
                           item.ltr ? "tnum" : ""
                         }`}
                       >
@@ -492,7 +494,9 @@ export default function Footer() {
             <nav aria-labelledby="footer-links" className="lg:col-span-3">
               <ColumnTitle id="footer-links">روابط سريعة</ColumnTitle>
 
-              <ul className="mt-5 space-y-2.5">
+              {/* Each link is a 44px row now; the top margin gives back the
+                  8px it gained, so the first label sits where it did. */}
+              <ul className="mt-3">
                 {QUICK_LINKS.map((link) => (
                   <li key={link.key}>
                     <FooterLink link={link} />
@@ -525,7 +529,7 @@ export default function Footer() {
 
               {/* The legal pages sit under the follow column rather than in
                   the quick links, so the grid keeps its three-column rhythm. */}
-              <ul className="mt-7 space-y-2.5">
+              <ul className="mt-5">
                 {LEGAL_LINKS.map((link) => (
                   <li key={link.key}>
                     <FooterLink link={link} />

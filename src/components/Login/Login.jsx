@@ -43,7 +43,9 @@ export default function Login() {
             labelAction={
               <Link
                 to="/forgot-password"
-                className="text-[13px] font-medium text-brand-600 transition-colors duration-200 hover:text-brand-900"
+                /* The input is only 8px below, so the 44px hit area grows
+                   mostly upward, into the space above the label row. */
+                className="relative text-[13px] font-medium text-brand-600 after:absolute after:inset-x-0 after:-top-5 after:-bottom-1.5 after:content-[''] transition-colors duration-200 hover:text-brand-900"
               >
                 نسيت كلمة المرور؟
               </Link>
@@ -69,7 +71,7 @@ export default function Login() {
 
         <Link
           to="/register"
-          className="mt-8 flex items-center justify-center gap-1.5 text-sm text-muted transition-colors duration-200 hover:text-ink"
+          className="mt-5 flex min-h-11 items-center justify-center gap-1.5 text-sm text-muted transition-colors duration-200 hover:text-ink"
         >
           ليس لديك حساب؟
           <span className="font-semibold text-brand-900">إنشاء حساب جديد</span>

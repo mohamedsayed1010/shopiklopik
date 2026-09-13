@@ -185,7 +185,7 @@ export default function Register() {
 
         <Link
           to="/login"
-          className="mt-6 flex items-center justify-center gap-1.5 text-sm text-muted transition-colors duration-200 hover:text-ink"
+          className="mt-3 flex min-h-11 items-center justify-center gap-1.5 text-sm text-muted transition-colors duration-200 hover:text-ink"
         >
           لديك حساب بالفعل؟
           <span className="font-semibold text-brand-900">تسجيل الدخول</span>

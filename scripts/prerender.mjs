@@ -134,26 +134,71 @@ function jsonLd(graph) {
   return `\n    <script type="application/ld+json">${json}</script>`;
 }
 
+/* The home document is also the service worker's navigation fallback, so it is
+   what a visitor sees while the bundle downloads. Laid out like the page that
+   replaces it — dark bar, dark hero, then the sections — because the plain
+   column (name, description, list of links) read as the site footer arriving
+   first. Same text and links as before; the colours come from the stylesheet's
+   own tokens so the saved theme applies. */
+const HOME_BAR_STYLE = [
+  "height:4rem",
+  "display:flex",
+  "align-items:center",
+  "padding:0 1rem",
+  "background:#041b3d",
+  "border-bottom:1px solid rgba(255,255,255,.1)",
+  "color:#fff",
+  "font-weight:700",
+].join(";");
+
+const HOME_HERO_STYLE = [
+  "background:#041b3d",
+  "color:#fff",
+  "text-align:center",
+  "padding:1.75rem 1rem 2.5rem",
+].join(";");
+
+const HOME_CARD_STYLE = [
+  "display:block",
+  "padding:.9rem .75rem",
+  "border-radius:1rem",
+  "border:1px solid var(--color-line,#e6e9ef)",
+  "background:var(--color-surface,#fff)",
+  "color:var(--color-ink,#101828)",
+  "font-weight:600",
+  "text-align:center",
+  "text-decoration:none",
+].join(";");
+
 function homeBody({ settings, tree }) {
   const name = settings?.siteName || settings?.siteNameEn || "";
 
   const items = tree
     .map(
       (category) =>
-        `<li>${link(`/category/${category.id}`, category.name)}</li>`
+        `<li><a href="${escapeHtml(`/category/${category.id}`)}" style="${HOME_CARD_STYLE}">${escapeHtml(category.name)}</a></li>`
     )
-    .join("\n        ");
+    .join("\n          ");
 
-  return body(
-    [
-      `<h1>${escapeHtml(name)}</h1>`,
-      settings?.description ? `<p>${escapeHtml(settings.description)}</p>` : "",
-      `<h2>الأقسام</h2>`,
-      `<ul>\n        ${items}\n      </ul>`,
-    ]
-      .filter(Boolean)
-      .join("\n      ")
-  );
+  return [
+    `<div style="min-height:100vh;background:var(--color-canvas,#eff6ff);font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;line-height:1.8">`,
+    `  <div aria-hidden="true" style="${HOME_BAR_STYLE}">${escapeHtml(name)}</div>`,
+    `  <section style="${HOME_HERO_STYLE}">`,
+    `    <h1 style="margin:0;font-size:1.6rem;line-height:1.4">${escapeHtml(name)}</h1>`,
+    settings?.description
+      ? `    <p style="margin:.75rem auto 0;max-width:36rem;font-size:.875rem;color:#c2d1e6">${escapeHtml(settings.description)}</p>`
+      : "",
+    `  </section>`,
+    `  <div style="max-width:80rem;margin:0 auto;padding:2rem 1rem 4rem">`,
+    `    <h2 style="margin:0 0 1rem;font-size:1.25rem;color:var(--color-ink,#101828)">الأقسام</h2>`,
+    `    <ul style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(9rem,1fr));gap:.75rem">`,
+    `          ${items}`,
+    `    </ul>`,
+    `  </div>`,
+    `</div>`,
+  ]
+    .filter(Boolean)
+    .join("\n    ");
 }
 
 function categoryBody({ category }) {

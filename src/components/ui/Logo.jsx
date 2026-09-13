@@ -131,7 +131,11 @@ export default function Logo({
   }
 
   return (
-    <Link to={to} aria-label="شوبيك لوبيك - الصفحة الرئيسية" className={base}>
+    <Link
+      to={to}
+      aria-label="شوبيك لوبيك - الصفحة الرئيسية"
+      className={`tap-target relative ${base}`}
+    >
       {content}
     </Link>
   );

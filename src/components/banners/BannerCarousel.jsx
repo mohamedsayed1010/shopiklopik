@@ -28,7 +28,7 @@ function Arrow({ direction, onClick, label }) {
       /* Hidden on phones, where the gesture is the control and an arrow would
          only sit on top of the artwork. Revealed on hover on desktop, and
          always reachable by keyboard through focus-visible. */
-      className={`absolute top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/25 bg-brand-950/45 text-white opacity-0 shadow-lg backdrop-blur-md transition-[opacity,background-color,transform] duration-300 ease-out hover:bg-brand-950/70 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:scale-95 group-hover/carousel:opacity-100 sm:flex ${edge}`}
+      className={`tap-target absolute top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/25 bg-brand-950/45 text-white opacity-0 shadow-lg backdrop-blur-md transition-[opacity,background-color,transform] duration-300 ease-out hover:bg-brand-950/70 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:scale-95 group-hover/carousel:opacity-100 sm:flex ${edge}`}
     >
       <Icon size={20} strokeWidth={2.2} aria-hidden="true" />
     </button>

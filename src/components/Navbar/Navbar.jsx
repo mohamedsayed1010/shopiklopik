@@ -248,7 +248,7 @@ export default function Navbar() {
                 to="/favorites"
                 aria-label="المفضلة"
                 title="المفضلة"
-                className="group flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white transition-[background-color,transform] duration-200 hover:bg-white/10 active:scale-95"
+                className="tap-target group relative flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white transition-[background-color,transform] duration-200 hover:bg-white/10 active:scale-95"
               >
                 <Heart
                   size={19}
@@ -265,7 +265,7 @@ export default function Navbar() {
               onFocus={warmDrawer}
               aria-label="فتح القائمة"
               aria-expanded={open}
-              className="flex h-10 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 pe-2.5 ps-1.5 text-white transition-colors duration-200 hover:border-white/25 hover:bg-white/10 sm:gap-2 sm:pe-3"
+              className="tap-target relative flex h-10 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 pe-2.5 ps-1.5 text-white transition-colors duration-200 hover:border-white/25 hover:bg-white/10 sm:gap-2 sm:pe-3"
             >
               <Menu size={18} strokeWidth={2} />
 

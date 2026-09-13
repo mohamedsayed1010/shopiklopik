@@ -1,5 +1,12 @@
-import { Suspense, lazy, useContext, useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import {
+  Suspense,
+  lazy,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
+import { Outlet, useLocation, useNavigationType } from "react-router-dom";
 
 import { PageSpinner } from "../ui/Spinner";
 
@@ -22,18 +29,96 @@ const BARE_ROUTES = [
   "/reset-password",
 ];
 
+/** Scroll offset per history entry (`location.key`), for back and forward. */
+const scrollPositions = new Map();
+
 export default function Layout() {
-  const { pathname } = useLocation();
+  const location = useLocation();
+
+  const { pathname } = location;
+
+  const navigationType = useNavigationType();
 
   const { token, user, isAdmin } = useContext(AuthContext);
 
   const { settings } = useSiteSettings();
 
-  // React Router keeps the scroll position between routes, which makes a
-  // new page look like it opened halfway down.
+  const activeKey = useRef(location.key);
+
+  // Claimed before any scrolling below, so a listener still attached for the
+  // entry being left cannot record the new page's offset under the old key.
+  useLayoutEffect(() => {
+    activeKey.current = location.key;
+  }, [location.key]);
+
+  // Where each history entry was left, kept up to date while it is showing.
+  // Read on the way back, never at leave time: by then the next page has
+  // already rendered and the document may be too short to report it.
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-  }, [pathname]);
+    const key = location.key;
+
+    const save = () => {
+      if (activeKey.current === key) scrollPositions.set(key, window.scrollY);
+    };
+
+    window.addEventListener("scroll", save, { passive: true });
+
+    return () => window.removeEventListener("scroll", save);
+  }, [location.key]);
+
+  // React Router keeps the scroll position between routes, which makes a new
+  // page look like it opened halfway down — so a new page starts at the top.
+  // Back and forward are the exception: they return to where that page was.
+  const previousPathname = useRef(null);
+
+  useLayoutEffect(() => {
+    const pathChanged = previousPathname.current !== pathname;
+
+    previousPathname.current = pathname;
+
+    const target =
+      navigationType === "POP" ? scrollPositions.get(location.key) : undefined;
+
+    if (target === undefined) {
+      // A query-string change is the same page: leave the reader where they are.
+      if (pathChanged) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+
+      return undefined;
+    }
+
+    /* Cached pages are full height on this render, but a section still
+       settling can leave the document short for a few frames. Keep asking
+       briefly, and stop the moment the reader scrolls themselves. */
+    let frame = 0;
+
+    let attempts = 0;
+
+    const stop = () => cancelAnimationFrame(frame);
+
+    const restore = () => {
+      window.scrollTo({ top: target, left: 0, behavior: "instant" });
+
+      attempts += 1;
+
+      if (Math.abs(window.scrollY - target) > 1 && attempts < 30) {
+        frame = requestAnimationFrame(restore);
+      }
+    };
+
+    restore();
+
+    window.addEventListener("wheel", stop, { passive: true, once: true });
+    window.addEventListener("touchstart", stop, { passive: true, once: true });
+
+    return () => {
+      stop();
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchstart", stop);
+    };
+    // Every history entry, so back between two visits to the same path restores
+    // too; `pathname` and `navigationType` always change together with it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
 
   useEffect(() => {
     const warm = () => {

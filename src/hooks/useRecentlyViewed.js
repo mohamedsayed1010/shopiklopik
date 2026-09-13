@@ -59,7 +59,9 @@ export default function useRecentlyViewed({
        it on the way back. */
     staleTime: 1000 * 30,
 
-    gcTime: 1000 * 60 * 10,
+    // In line with the rest of the home page, so the rail is still there to
+    // paint when the reader comes back; the short staleTime keeps it fresh.
+    gcTime: 1000 * 60 * 30,
 
     retry: 1,
 

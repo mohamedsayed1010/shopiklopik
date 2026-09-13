@@ -101,7 +101,7 @@ export function TextField({
             type="button"
             onClick={() => setReveal((value) => !value)}
             aria-label={reveal ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
-            className="absolute top-1/2 -translate-y-1/2 cursor-pointer rounded-md p-1.5 text-muted transition-colors duration-150 hover:text-ink end-2.5"
+            className="absolute top-1/2 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-muted transition-colors duration-150 hover:text-ink end-[3px]"
           >
             {reveal ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>

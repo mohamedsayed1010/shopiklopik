@@ -12,7 +12,7 @@ function ScrollButton({ side, onClick, disabled }) {
       onClick={onClick}
       disabled={disabled}
       aria-label={side === "start" ? "السابق" : "التالي"}
-      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-ink-soft shadow-xs transition-[background-color,border-color,color,transform,opacity] duration-300 ease-out hover:border-brand-200 hover:bg-brand-50 hover:text-brand-800 active:scale-90 disabled:pointer-events-none disabled:opacity-35"
+      className="tap-target relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-ink-soft shadow-xs transition-[background-color,border-color,color,transform,opacity] duration-300 ease-out hover:border-brand-200 hover:bg-brand-50 hover:text-brand-800 active:scale-90 disabled:pointer-events-none disabled:opacity-35"
     >
       <Icon size={16} strokeWidth={2.3} />
     </button>
@@ -126,7 +126,8 @@ export default function ListingRail({
           {/* Underscores are how an arbitrary variant spells a space; without
               them the query compiles to `(hover:hover)and(pointer:fine)`,
               which no browser accepts — so the buttons never appeared. */}
-          <div className="hidden items-center gap-1.5 [@media(hover:hover)_and_(pointer:fine)]:flex">
+          {/* gap-3 keeps the two 44px hit areas from overlapping. */}
+          <div className="hidden items-center gap-3 [@media(hover:hover)_and_(pointer:fine)]:flex">
             <ScrollButton
               side="start"
               disabled={edges.start}

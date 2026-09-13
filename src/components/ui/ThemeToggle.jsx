@@ -38,7 +38,7 @@ export default function ThemeToggle({ variant = "icon", onToggled }) {
       aria-label={label}
       aria-pressed={isDark}
       title={label}
-      className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/15 text-white transition-[background-color,transform] duration-200 hover:bg-white/10 active:scale-95"
+      className="tap-target relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/15 text-white transition-[background-color,transform] duration-200 hover:bg-white/10 active:scale-95"
     >
       <Icon size={18} strokeWidth={2} aria-hidden="true" />
     </button>

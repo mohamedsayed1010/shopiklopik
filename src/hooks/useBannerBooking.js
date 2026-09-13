@@ -63,7 +63,9 @@ export function useBannerAvailability({
     queryFn: () => getBannerAvailability({ location, categoryId, subCategoryId }),
     enabled: enabled && Boolean(location),
     staleTime: 1000 * 30,
-    gcTime: 1000 * 60 * 5,
+    // Kept as long as the banners it decides between, so an empty slot on the
+    // home page does not fall back to a skeleton after a few minutes away.
+    gcTime: 1000 * 60 * 30,
     retry: bookingRetry,
   });
 }

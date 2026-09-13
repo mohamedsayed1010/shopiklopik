@@ -768,6 +768,21 @@ html[data-theme="dark"] .notification-row {
   }
 }
 
+/* Touch-target floor. An invisible, centred ::after grows the hit area to at
+   least 44×44 without changing how the control looks or the room it takes;
+   taps on a pseudo-element land on its host. The host must be positioned and
+   must not clip overflow. */
+.tap-target::after,
+.sig__plate::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
 /* A slow breath on the plate's halo — never a blink. */
 @keyframes sig-halo {
   0%,
