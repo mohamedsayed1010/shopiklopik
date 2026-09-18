@@ -41,18 +41,21 @@ sudo nginx -t && sudo systemctl reload nginx
 Replace the placeholders in that file first: `YOUR-DOMAIN`, the web root, and —
 only if you co-host the API — the Kestrel address.
 
-### The one rule that matters most
+### The routing rules that matter most
 
-```nginx
-location / {
-    try_files $uri $uri/ /index.html;
-}
-```
+React Router uses `createBrowserRouter`, so `/dynamic/12/52/<id>`, `/profile`
+and `/admin/...` are client-side paths with no file behind them. Opening or
+refreshing one — exactly the request an Android deep link makes — must still
+reach the app. The config does that without a catch-all:
 
-React Router uses `createBrowserRouter`, so `/dynamic/12/52/<id>`, `/profile`,
-`/notifications` and `/admin/...` are client-side paths with no file behind
-them. Without this line, opening or refreshing one returns 404 — and that is
-exactly the request an Android deep link makes.
+- prerendered pages are served from `dist/<path>/index.html`, slash-less;
+- the app's own routes (listed in the config, mirroring `src/Routes/index.jsx`)
+  get `dist/app.html` with 200;
+- a listing goes to the share renderer (`server/share-renderer.mjs`, installed
+  with `deploy/share-renderer.service`), falling back to `dist/app.html`;
+- everything else gets `dist/404.html` with a 404 status. That body is still
+  the app, so even a deep link to an address the list is missing opens the
+  right screen — only its HTTP status is wrong. Add the route to the list.
 
 The service worker has its own navigation fallback, but it only applies once
 installed. The **first** visit reaches Nginx, so both are needed.

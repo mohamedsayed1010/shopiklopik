@@ -7,7 +7,10 @@ import {
   siteOrigin,
   fetchCategoryTree,
   fetchSettings,
+  fetchEmptySections,
 } from "./seoBuildData.mjs";
+
+import { ADVERTISING_SECTIONS } from "../src/content/legalContent.js";
 
 import {
   homeGraph,
@@ -46,7 +49,7 @@ function oneLine(value, max = 160) {
 
 /* ------------------------------------------------------------------- the head */
 
-function withHead(shell, { origin, path, title, description, image }) {
+function withHead(shell, { origin, path, title, description, image, robots = "index, follow" }) {
   if (path !== "/") {
     shell = shell.replace(/[ \t]*<link[^>]*data-hero-preload="true"[^>]*>\n?/g, "");
   }
@@ -64,7 +67,7 @@ function withHead(shell, { origin, path, title, description, image }) {
   const tags = [
     `<title data-rh="true">${escapeHtml(title)}</title>`,
     `<meta data-rh="true" name="description" content="${escapeHtml(description)}" />`,
-    `<meta data-rh="true" name="robots" content="index, follow" />`,
+    `<meta data-rh="true" name="robots" content="${escapeHtml(robots)}" />`,
     `<link data-rh="true" rel="canonical" href="${escapeHtml(url)}" />`,
     `<meta data-rh="true" property="og:type" content="website" />`,
     `<meta data-rh="true" property="og:title" content="${escapeHtml(title)}" />`,
@@ -303,13 +306,36 @@ function subCategoryBody({ category, sub }) {
   );
 }
 
-function contentBody({ title, description, text }) {
+/** The code-owned sections a content page always shows after its text. */
+function appendedSections(sections) {
+  return (sections ?? [])
+    .map((section) =>
+      [
+        `<h2>${escapeHtml(section.title)}</h2>`,
+        ...section.paragraphs.map((text) => `<p>${escapeHtml(text)}</p>`),
+        section.links?.length
+          ? `<ul>${section.links
+              .map(
+                (row) =>
+                  `<li><a href="${escapeHtml(row.href)}" rel="noopener noreferrer">${escapeHtml(row.label)}</a></li>`
+              )
+              .join("")}</ul>`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n      ")
+    )
+    .join("\n      ");
+}
+
+function contentBody({ title, description, text, append }) {
   return body(
     [
       breadcrumb([{ href: "/", label: "الرئيسية" }, { label: title }]),
       `<h1>${escapeHtml(title)}</h1>`,
       description ? `<p>${escapeHtml(description)}</p>` : "",
       paragraphs(text),
+      appendedSections(append),
     ]
       .filter(Boolean)
       .join("\n      ")
@@ -360,12 +386,53 @@ function writeRoute(shell, origin, route) {
   writeFileSync(join(dir, "index.html"), html, "utf8");
 }
 
+/* ---------------------------------------------------------------- the shells */
+
+/* Two documents with no prerendered content, for the addresses Nginx cannot
+   answer with a prerendered file (see deploy/nginx/shobiklobik.conf):
+
+   app.html — a real client-side route with nothing to prerender (sign-in,
+   profile, a listing, the admin console). The bare app: no canonical, no
+   robots directive — the page declares both itself once it renders. Serving
+   the prerendered home document here instead is what gave every such address
+   the home page's `canonical=/`.
+
+   404.html — the body Nginx sends with a 404 status. It is still the app, so
+   a person who follows a dead link gets the site's own not-found page. */
+function writeShells(shell) {
+  const bare = shell
+    .replace(/[ \t]*<link[^>]*data-hero-preload="true"[^>]*>\n?/g, "")
+    .replace(/[ \t]*<meta[^>]*data-rh="true"[^>]*name="robots"[^>]*>\n?/g, "");
+
+  writeFileSync(join(distDir, "app.html"), bare, "utf8");
+
+  const notFound = bare
+    .replace(/<title[^>]*data-rh="true"[^>]*>[\s\S]*?<\/title>/g, "")
+    .replace(/[ \t]*<meta[^>]*data-rh="true"[^>]*>\n?/g, "")
+    .replace(
+      "</head>",
+      [
+        `    <title data-rh="true">الصفحة غير موجودة | شوبيك لوبيك</title>`,
+        `    <meta data-rh="true" name="robots" content="noindex" />`,
+        "  </head>",
+      ].join("\n")
+    );
+
+  writeFileSync(join(distDir, "404.html"), notFound, "utf8");
+}
+
 async function main() {
   if (!existsSync(shellPath)) {
     console.warn("[prerender] dist/index.html is missing — nothing to do.");
 
     return;
   }
+
+  // Needed whatever else happens: Nginx serves these for every address that
+  // has no prerendered file.
+  writeShells(readFileSync(shellPath, "utf8"));
+
+  console.log("[prerender] wrote dist/app.html and dist/404.html");
 
   const origin = siteOrigin();
 
@@ -385,16 +452,30 @@ async function main() {
     fetchSettings(),
   ]);
 
-  /* Without the catalogue there is nothing to prerender that the shell does
-     not already say. The build keeps its plain index.html and stays valid. */
+  /* Without the catalogue no category or section document is written, and
+     Nginx answers an address with no document 404 — every category would
+     vanish from search until the next build. The site itself would still work
+     for people (the 404 body is the app), so this is a crawler-only failure,
+     which is exactly the kind nobody notices. Stop the release instead. */
   if (!tree) {
-    console.warn(
-      "[prerender] category tree unavailable — leaving dist/index.html as the " +
-        "only document. The site still works; crawlers just see the shell."
+    console.error(
+      "[prerender] category tree unavailable — no category or section page " +
+        "was written, and the server answers those addresses 404 without " +
+        "them. Rebuild once the API answers. To ship anyway, set " +
+        "SEO_ALLOW_MISSING_CATALOGUE=1."
     );
+
+    if (process.env.SEO_ALLOW_MISSING_CATALOGUE !== "1") process.exitCode = 1;
 
     return;
   }
+
+  const empty = await fetchEmptySections(tree);
+
+  /* A section with no public listing is a heading and an empty grid. It stays
+     fully usable, but it is kept out of the index — and out of the sitemap —
+     until it has something to show. Recomputed on every build. */
+  const robotsFor = (isEmpty) => (isEmpty ? "noindex, follow" : "index, follow");
 
   const shell = readFileSync(shellPath, "utf8");
 
@@ -437,6 +518,7 @@ async function main() {
         `تصفّح أقسام ${category.name} داخل ${siteName} واختر القسم المناسب للوصول إلى الإعلانات المتاحة.`
       ),
       image,
+      robots: robotsFor(empty.emptyCategories.has(String(category.id))),
       body: categoryBody({ category }) + jsonLd(categoryGraph({ category })),
     });
 
@@ -448,6 +530,7 @@ async function main() {
           `أحدث إعلانات ${sub.name} في قسم ${category.name} على ${siteName}.`
         ),
         image,
+        robots: robotsFor(empty.emptySubCategories.has(`${category.id}/${sub.id}`)),
         body:
           subCategoryBody({ category, sub }) +
           jsonLd(subCategoryGraph({ category, subCategory: sub })),
@@ -478,6 +561,7 @@ async function main() {
       description:
         "ما البيانات التي تجمعها منصة شوبيك لوبيك، ولماذا، وما الذي يظهر منها للآخرين.",
       field: "privacyPolicy",
+      append: ADVERTISING_SECTIONS,
     },
   ];
 
@@ -495,7 +579,12 @@ async function main() {
       title: suffix(doc.title),
       description: oneLine(doc.description),
       image,
-      body: contentBody({ title: doc.title, description: doc.description, text }),
+      body: contentBody({
+        title: doc.title,
+        description: doc.description,
+        text,
+        append: doc.append,
+      }),
     });
   }
 
@@ -520,7 +609,8 @@ async function main() {
 
   console.log(
     `[prerender] wrote ${routes.length} document(s) — 1 home, ${categories} ` +
-      `category, ${subCategories} section, ${routes.length - 1 - categories - subCategories} content`
+      `category, ${subCategories} section, ${routes.length - 1 - categories - subCategories} content; ` +
+      `noindex while empty: ${empty.emptyCategories.size} category, ${empty.emptySubCategories.size} section`
   );
 }
 

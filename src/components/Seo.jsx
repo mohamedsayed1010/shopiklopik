@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import useSiteSettings from "../hooks/useSiteSettings";
 import { canonicalUrl } from "../seo/siteUrl";
 import { robotsFor } from "../seo/routePolicy";
+import { servedRobotsFor } from "../seo/clearStaticHead";
 
 /** Trim to a length a search result will not cut mid-word. */
 function clamp(text, max) {
@@ -61,7 +62,7 @@ export default function Seo({
 
   const url = canonicalUrl(canonicalPath ?? pathname);
 
-  const directive = robots ?? robotsFor(pathname);
+  const directive = robots ?? servedRobotsFor(pathname) ?? robotsFor(pathname);
 
   const shareImage = image || settings.logoUrl || "";
 

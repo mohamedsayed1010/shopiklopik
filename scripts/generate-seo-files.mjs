@@ -2,7 +2,12 @@
 import { writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { ROOT, siteOrigin, fetchCategoryTree } from "./seoBuildData.mjs";
+import {
+  ROOT,
+  siteOrigin,
+  fetchCategoryTree,
+  fetchEmptySections,
+} from "./seoBuildData.mjs";
 
 const publicDir = join(ROOT, "public");
 
@@ -83,17 +88,23 @@ function buildSitemap(origin, entries) {
  * it is not listed — a sitemap entry for a page that answers with a login form
  * is worse than no entry at all.
  */
-function catalogueEntries(tree, { categoryPath, subCategoryPath }) {
+function catalogueEntries(tree, { categoryPath, subCategoryPath }, empty) {
   const entries = [];
 
   for (const category of tree) {
-    entries.push({
-      path: categoryPath(category.id),
-      changefreq: "weekly",
-      priority: "0.8",
-    });
+    /* A section with nothing public in it is left out until it has — its
+       page carries `noindex` for the same reason (see prerender.mjs). */
+    if (!empty.emptyCategories.has(String(category.id))) {
+      entries.push({
+        path: categoryPath(category.id),
+        changefreq: "weekly",
+        priority: "0.8",
+      });
+    }
 
     for (const sub of category.subCategories) {
+      if (empty.emptySubCategories.has(`${category.id}/${sub.id}`)) continue;
+
       entries.push({
         path: subCategoryPath(category.id, sub.id),
         changefreq: "daily",
@@ -173,9 +184,11 @@ async function main() {
     );
   }
 
+  const empty = await fetchEmptySections(tree);
+
   const entries = dedupe([
     ...SITEMAP_PATHS,
-    ...(tree ? catalogueEntries(tree, { categoryPath, subCategoryPath }) : []),
+    ...(tree ? catalogueEntries(tree, { categoryPath, subCategoryPath }, empty) : []),
   ]);
 
   writeFileSync(
@@ -191,8 +204,9 @@ async function main() {
 
   console.log(
     `[seo] wrote public/sitemap.xml with ${entries.length} URL(s) — ` +
-      `${SITEMAP_PATHS.length} static, ${categories} category, ` +
-      `${subCategories} subcategory`
+      `${SITEMAP_PATHS.length} static, ${categories - empty.emptyCategories.size}/${categories} category, ` +
+      `${subCategories - empty.emptySubCategories.size}/${subCategories} subcategory ` +
+      `(sections with no public listings are left out until they have one)`
   );
 }
 

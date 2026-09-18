@@ -1,0 +1,38 @@
+# Share previews for listing addresses — see server/share-renderer.mjs.
+#
+# Install (on the VPS, once):
+#   sudo cp deploy/share-renderer.service /etc/systemd/system/shobiklobik-share.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now shobiklobik-share
+#
+# It listens on 127.0.0.1:8787 only; Nginx is its one client. It needs the
+# built dist/ (app.html and 404.html) and Node 18 or newer. It re-reads those
+# two files when a deploy replaces them, so a deploy does not need a restart.
+
+[Unit]
+Description=Shobik Lobik listing share previews
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+# The directory holding server/, scripts/, src/seo/ and src/content/.
+WorkingDirectory=/opt/shobiklobik
+Environment=SHARE_PORT=8787
+Environment=DIST_DIR=/var/www/shobiklobik
+Environment=VITE_SITE_URL=https://shopiklopik.com
+Environment=VITE_API_BASE_URL=https://api.shopiklopik.com
+ExecStart=/usr/bin/node server/share-renderer.mjs
+Restart=on-failure
+RestartSec=2
+
+# It reads files and makes outbound HTTPS requests; nothing else.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/opt/shobiklobik /var/www/shobiklobik
+
+[Install]
+WantedBy=multi-user.target

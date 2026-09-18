@@ -118,7 +118,7 @@ export const PRIVACY_SECTIONS = [
   {
     title: "مشاركة البيانات",
     paragraphs: [
-      "لا نبيع بياناتك ولا نشاركها مع جهات إعلانية.",
+      "لا نبيع بياناتك، ولا نرسل بيانات حسابك — مثل اسمك ورقم هاتفك وبريدك الإلكتروني — إلى أي جهة إعلانية. أما الإعلانات التي تظهر على الموقع فتعرضها Google؛ انظر قسم «الإعلانات وملفات تعريف الارتباط» أدناه.",
       "قد نُفصح عن بيانات محددة إذا طلبتها جهة رسمية مختصة وفق القانون، أو عند الضرورة للتعامل مع محاولات احتيال أو إساءة استخدام تمس أمان المنصة ومستخدميها.",
     ],
   },
@@ -138,16 +138,54 @@ export const PRIVACY_SECTIONS = [
     ],
   },
   {
-    title: "بيانات الأجهزة",
-    paragraphs: [
-      "نحفظ على جهازك بيانات تشغيل أساسية مثل بيانات تسجيل الدخول، حتى تظل مسجّلًا ولا تحتاج إلى إدخال كلمة المرور في كل مرة. ويؤدي تسجيل الخروج إلى مسحها.",
-    ],
-  },
-  {
     title: "تحديث السياسة",
     paragraphs: [
       "قد نحدّث هذه السياسة عند إضافة خصائص جديدة للمنصة، ويسري التحديث من تاريخ نشره على هذه الصفحة.",
       "لأي استفسار بخصوص خصوصيتك، تواصل معنا عبر صفحة «تواصل معنا».",
+    ],
+  },
+];
+
+/**
+ * What the site's own code does with advertising and on-device storage.
+ *
+ * Kept out of `PRIVACY_SECTIONS` on purpose: the privacy text an admin stores
+ * in the settings replaces those sections, but it cannot change what
+ * `index.html` loads or what the app writes to the browser. This section
+ * describes exactly that, so it is always shown after the stored text and
+ * changes only when the code it describes changes.
+ *
+ * What it reflects, as implemented:
+ * - `index.html` loads Google AdSense (adsbygoogle.js, publisher
+ *   ca-pub-6763159022783792) on every page once the page has loaded. There are
+ *   no hand-placed ad units; Google chooses the placements. No other ad
+ *   network or analytics script is loaded, and no consent tool is installed.
+ * - Neither the site nor its API sets a cookie of its own.
+ * - The app keeps in localStorage: the sign-in session and a copy of the
+ *   profile (both removed on sign-out), the light/dark preference, recent
+ *   searches and recently viewed listings.
+ */
+export const ADVERTISING_SECTIONS = [
+  {
+    title: "الإعلانات وملفات تعريف الارتباط",
+    paragraphs: [
+      "يعرض الموقع إعلانات من خلال خدمة Google AdSense التابعة لشركة Google، ويُحمَّل كود الإعلانات من خوادم Google في صفحات الموقع. تختار Google أماكن ظهور الإعلانات ومحتواها.",
+      "تستخدم Google، بصفتها مزوّدًا خارجيًا، ملفات تعريف الارتباط (الكوكيز) وتقنيات مشابهة لعرض الإعلانات وقياس أدائها. ويتيح ذلك لـ Google وشركائها عرض إعلانات لك بناءً على زياراتك لهذا الموقع أو لمواقع أخرى على الإنترنت.",
+      "تُنشئ Google هذه الملفات وتقرؤها مباشرة من متصفحك وفق سياسات Google. ولا نرسل إليها بيانات حسابك مثل اسمك أو رقم هاتفك أو بريدك الإلكتروني.",
+      "يمكنك إيقاف الإعلانات المخصّصة من إعدادات الإعلانات في حسابك على Google، أو إيقاف استخدام ملفات تعريف الارتباط لدى الموردين الخارجيين للإعلانات المخصّصة من موقع aboutads.info. كما يمكنك حذف ملفات تعريف الارتباط أو حظرها من إعدادات متصفحك.",
+    ],
+    links: [
+      { href: "https://adssettings.google.com", label: "إعدادات الإعلانات في Google" },
+      { href: "https://www.aboutads.info/choices", label: "إيقاف الإعلانات المخصّصة لدى الموردين الخارجيين (aboutads.info)" },
+      { href: "https://policies.google.com/technologies/partner-sites", label: "كيف تستخدم Google البيانات عند استخدامك مواقع شركائها" },
+      { href: "https://policies.google.com/technologies/ads", label: "كيف تستخدم Google ملفات تعريف الارتباط في الإعلانات" },
+    ],
+  },
+  {
+    title: "ما يحفظه الموقع على جهازك",
+    paragraphs: [
+      "لا يُنشئ موقع شوبيك لوبيك ملفات تعريف ارتباط خاصة به. لكنه يحفظ في مساحة التخزين المحلية في متصفحك (Local Storage) بيانات تشغيل: جلسة تسجيل الدخول ونسخة من بيانات ملفك الشخصي، وتفضيل المظهر (فاتح أو داكن)، وعمليات البحث الأخيرة، والإعلانات التي شاهدتها مؤخرًا.",
+      "تبقى هذه البيانات على جهازك ولا تُستخدم للإعلانات. تسجيل الخروج يمسح جلسة الدخول وبيانات الملف الشخصي، ويمكنك مسح الباقي من إعدادات المتصفح.",
     ],
   },
 ];

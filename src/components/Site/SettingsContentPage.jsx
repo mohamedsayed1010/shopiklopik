@@ -29,6 +29,8 @@ export default function SettingsContentPage({
   description,
   /** `[{ title, paragraphs }]` — shown only when the stored field is empty. */
   fallbackSections = null,
+  /** `[{ title, paragraphs, links? }]` — always shown after the content. */
+  appendSections = null,
 }) {
   const { settings, isLoading } = useSiteSettings();
 
@@ -93,6 +95,40 @@ export default function SettingsContentPage({
               </p>
             </div>
           )}
+
+          {/* Written by the code, not the settings — see ADVERTISING_SECTIONS. */}
+          {!isLoading && appendSections?.length ? (
+            <div className="mt-8 space-y-8 border-t border-line pt-8">
+              {appendSections.map((section) => (
+                <section key={section.title} className="space-y-3">
+                  <h2 className="text-[17px] font-bold leading-7 text-ink">
+                    {section.title}
+                  </h2>
+
+                  {section.paragraphs.map((paragraph, index) => (
+                    <Prose key={index}>{paragraph}</Prose>
+                  ))}
+
+                  {section.links?.length ? (
+                    <ul className="list-disc space-y-1.5 ps-5 text-[15px] leading-7">
+                      {section.links.map((link) => (
+                        <li key={link.href}>
+                          <a
+                            href={link.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-brand-700 underline underline-offset-2 hover:text-brand-900"
+                          >
+                            {link.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </section>
+              ))}
+            </div>
+          ) : null}
         </article>
 
         {Icon && hasContent && (

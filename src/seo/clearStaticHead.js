@@ -30,8 +30,59 @@
  * The favicon `<link>` is deliberately not marked in the markup, so it is not
  * matched here and `useFavicon` keeps ownership of it.
  */
+let served;
+
+/* The robots directive the server sent for the address the document was
+   loaded at — `{ path, robots }`, or `null`.
+
+   Only trusted when the document's own canonical names that same address. The
+   service worker answers some navigations with the cached home document, and
+   that document's directive belongs to `/`, not to wherever it was served. */
+function readServed() {
+  if (served !== undefined) return served;
+
+  served = null;
+
+  if (typeof document === "undefined") return served;
+
+  const robots = document.head
+    ?.querySelector('meta[name="robots"][data-rh]')
+    ?.getAttribute("content");
+
+  const canonical = document.head
+    ?.querySelector('link[rel="canonical"][data-rh]')
+    ?.getAttribute("href");
+
+  if (!robots || !canonical) return served;
+
+  try {
+    const path = new URL(canonical, window.location.href).pathname;
+
+    if (path === window.location.pathname) served = { path, robots };
+  } catch {
+    // A canonical that is not a URL says nothing about this address.
+  }
+
+  return served;
+}
+
+/**
+ * The directive a prerendered or server-rendered document declared for this
+ * path, so the hydrated page publishes the same one instead of contradicting
+ * it. The server decides some directives from data the browser does not load
+ * — a section with no public listings is `noindex` (see scripts/prerender.mjs).
+ */
+export function servedRobotsFor(pathname) {
+  const value = readServed();
+
+  return value && value.path === pathname ? value.robots : null;
+}
+
 export default function clearStaticHead() {
   if (typeof document === "undefined") return;
+
+  // Read before the tags it reads from are removed.
+  readServed();
 
   const stale = document.head?.querySelectorAll("[data-rh]");
 

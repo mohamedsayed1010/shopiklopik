@@ -261,16 +261,32 @@ npm run preview    # optional: check the built bundle before uploading
 `dist/` is a static bundle — upload it to the web root of the server that serves
 <https://shopiklopik.com>.
 
-The one server rule that matters is the SPA fallback, because React Router uses
-real paths with no files behind them:
+The server answers each address in one of three ways, and the build writes a
+document for each:
 
-```nginx
-location / {
-    try_files $uri $uri/ /index.html;
-}
-```
+- a prerendered page (`/`, `/about`, `/category/6`, `/dynamic/6/18`, …) from
+  `dist/<path>/index.html`, with **no trailing slash** — `/about/` redirects to
+  `/about`, the form every canonical, sitemap entry and link uses;
+- a real app route with nothing to prerender (`/login`, `/profile`,
+  `/admin/ads`, …) from `dist/app.html`, status 200;
+- anything else from `dist/404.html` with status **404** — still the app, so a
+  person sees the site's own not-found page, but a crawler sees a real 404.
 
-Without it, opening or refreshing `/profile` or `/admin/ads` returns 404.
+The route list in the Nginx config mirrors `src/Routes/index.jsx`. A new route
+that is not prerendered must be added there too, or the server answers it 404.
+
+A listing (`/dynamic/:c/:s/:id`) is answered by `server/share-renderer.mjs`,
+which adds that listing's Open Graph tags so a shared link previews as the
+listing. It runs beside Nginx as a small Node service
+(`deploy/share-renderer.service`); if it is down, Nginx serves the plain app.
+
+The build refuses to finish when it cannot read the category tree, because
+without it no category page is written and every one would answer 404. Set
+`SEO_ALLOW_MISSING_CATALOGUE=1` to ship anyway.
+
+Sections with no public listing are built with `noindex, follow` and left out
+of `sitemap.xml`; each build recounts, so a section returns to the index on the
+first build after it gets a listing.
 
 A complete Nginx site config is in `deploy/nginx/shobiklobik.conf` — replace its
 `YOUR-DOMAIN` and web-root placeholders before installing it. The full
