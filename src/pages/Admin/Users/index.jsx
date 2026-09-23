@@ -119,17 +119,19 @@ function AdminUsersDashboard() {
     status === 429
       ? {
           title: "عدد كبير من الطلبات",
-          description: "تم تجاوز الحد المسموح مؤقتًا. انتظر قليلًا ثم أعد المحاولة.",
+          description:
+            "تم تجاوز الحد المسموح مؤقتًا. انتظر قليلًا ثم أعد المحاولة.",
         }
       : status >= 500
-      ? {
-          title: "خطأ في الخادم",
-          description: "تعذّر على الخادم إكمال الطلب. حاول مرة أخرى بعد قليل.",
-        }
-      : {
-          title: "تعذّر تحميل المستخدمين",
-          description: "حدث خطأ أثناء جلب قائمة المستخدمين. حاول مرة أخرى.",
-        };
+        ? {
+            title: "خطأ في الخادم",
+            description:
+              "تعذّر على الخادم إكمال الطلب. حاول مرة أخرى بعد قليل.",
+          }
+        : {
+            title: "تعذّر تحميل المستخدمين",
+            description: "حدث خطأ أثناء جلب قائمة المستخدمين. حاول مرة أخرى.",
+          };
 
   /* The dialog acts on the freshest copy: the detail response once it has
      landed, the row until then — both carry `id`, `status` and `statusName`. */
@@ -166,10 +168,6 @@ function AdminUsersDashboard() {
           <div className="flex shrink-0 items-center gap-2">
             {/* Exports the rows already on screen — this pagination page, as
                 the filters and the search left it. No request of its own. */}
-            <UsersExportMenu
-              users={users}
-              subtitle={`صفحة ${formatNumber(pageIndex)} — ${formatNumber(users.length)} حساب`}
-            />
 
             <Button
               variant="outline"
@@ -180,6 +178,10 @@ function AdminUsersDashboard() {
               <RotateCw size={15} />
               تحديث
             </Button>
+            <UsersExportMenu
+              users={users}
+              subtitle={`صفحة ${formatNumber(pageIndex)} — ${formatNumber(users.length)} حساب`}
+            />
           </div>
         </header>
 
