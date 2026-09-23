@@ -1,70 +1,103 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
-import { getDynamicData } from "../api/products/products";
-import { listingSellerName } from "../utils/listingModel";
+import { getAdvertisers } from "../api/categories/lookups";
 
-/** The API caps a page at 50 however many are asked for. */
-const PAGE_SIZE = 50;
+/** The lookup's own default page size, as read-config publishes it. */
+const PAGE_SIZE = 20;
 
-const MAX_PAGES = 10;
+/* A 4xx is an answer, not a hiccup: 400 means the section has no advertiser
+   filter, 404 an unknown section, and 429 the rate limiter — asking again at
+   once only feeds it. A network error or a 5xx gets one more try. */
+function shouldRetry(failureCount, error) {
+  const status = error?.response?.status;
 
-export default function useAdvertiserOptions(endpoint, { enabled = true } = {}) {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["advertiser-options", endpoint],
+  if (status && status < 500) return false;
 
-    queryFn: async () => {
-      const rows = [];
+  return failureCount < 1;
+}
 
-      let pageIndex = 1;
+/**
+ * The advertisers of one sub-category, from
+ * `/api/lookups/advertisers/{categoryId}/{subCategoryId}`, a page at a time.
+ * `search` narrows them on the server; the caller debounces it.
+ */
+export default function useAdvertiserOptions(
+  categoryId,
+  subCategoryId,
+  { search = "", enabled = true } = {}
+) {
+  const term = String(search ?? "").trim();
 
-      let totalPages = 1;
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: [
+      "advertisers",
+      categoryId,
+      subCategoryId,
+      term,
+      PAGE_SIZE,
+    ],
 
-      while (pageIndex <= totalPages && pageIndex <= MAX_PAGES) {
-        const response = await getDynamicData(endpoint, {
-          pageIndex,
-          pageSize: PAGE_SIZE,
-        });
+    queryFn: ({ pageParam }) =>
+      getAdvertisers(categoryId, subCategoryId, {
+        search: term,
+        pageIndex: pageParam,
+        pageSize: PAGE_SIZE,
+      }),
 
-        rows.push(...(response?.data?.items ?? []));
+    initialPageParam: 1,
 
-        totalPages = response?.data?.totalPages ?? 1;
+    getNextPageParam: (lastPage) =>
+      lastPage?.data?.hasNext ? lastPage.data.pageIndex + 1 : undefined,
 
-        pageIndex += 1;
-      }
+    enabled: Boolean(categoryId) && Boolean(subCategoryId) && enabled,
 
-      return rows;
-    },
+    staleTime: 1000 * 60 * 5,
 
-    enabled: Boolean(endpoint) && enabled,
-
-    staleTime: 1000 * 60 * 10,
-
-    gcTime: 1000 * 60 * 30,
-
-    retry: 1,
+    retry: shouldRetry,
 
     refetchOnWindowFocus: false,
   });
 
-  /* One entry per distinct advertiser: the name is both what the reader picks
-     and what the filter is set to, so it is also the key that de-duplicates
-     them. An advertiser with several listings appears once. */
+  /* The id is what the filter is set to and the name is what the reader
+     sees. Pages can overlap when a listing lands between two requests, so an
+     id already listed is not listed twice. */
   const options = useMemo(() => {
-    const byName = new Map();
+    const byId = new Map();
 
-    (data ?? []).forEach((row) => {
-      const name = String(listingSellerName(row) ?? "").trim();
+    (data?.pages ?? []).forEach((page) => {
+      (page?.data?.items ?? []).forEach((advertiser) => {
+        const id = advertiser?.id;
 
-      if (!name || byName.has(name)) return;
+        if (id === undefined || id === null || id === "" || byId.has(id)) {
+          return;
+        }
 
-      byName.set(name, { value: name, label: name });
+        byId.set(id, {
+          value: id,
+          label: String(advertiser.name ?? "").trim() || String(id),
+        });
+      });
     });
 
-    return [...byName.values()].sort((a, b) =>
-      a.label.localeCompare(b.label, "ar")
-    );
+    return [...byId.values()];
   }, [data]);
 
-  return { options, isLoading, isError };
+  return {
+    options,
+    isLoading,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage: Boolean(hasNextPage),
+    isFetchingNextPage,
+  };
 }

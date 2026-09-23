@@ -4,8 +4,6 @@ const ALWAYS_HIDDEN = ["pageIndex", "pageSize"];
 
 const CARS = 1;
 
-const LOST_FOUND = 3;
-
 const BUSINESSMEN = 4;
 
 const ANIMALS = 6;
@@ -21,9 +19,6 @@ const HOME_FURNISHING = 10;
 const REAL_ESTATE = 11;
 
 const CHARITY = 12;
-
-/** الوظائف / طلبات عمل — a person looking for work, not an advertiser. */
-const JOB_REQUESTS = "5/15";
 
 const CAR_HIDDEN = [
   "search",
@@ -176,31 +171,35 @@ export function hiddenFilterNames(config) {
    section collapses on desktop and keeps its sheet on mobile, which the
    renderer does unconditionally. */
 
-/* بوابة الخيرات joins them: someone asking for blood or calling for help is
-   not an "advertiser", and the picker's whole premise — browse the section by
-   who is selling — does not apply to a charity request. */
-const NO_ADVERTISER_CATEGORIES = new Set([
-  CARS,
-  REAL_ESTATE,
-  LOST_FOUND,
-  CHARITY,
-]);
+/** What the picker is called, whatever the parameter behind it. */
+const ADVERTISER_LABEL = "المعلن";
 
-const NO_ADVERTISER_SECTIONS = new Set([JOB_REQUESTS]);
+/** The lookup that lists a sub-category's advertisers. */
+const ADVERTISERS_LOOKUP = "/api/lookups/advertisers/";
 
-/** The parameter the picker drives, and what the control is called. */
-const ADVERTISER = { parameter: "search", label: "المعلن" };
-
+/* The backend decides which sections can be browsed by advertiser: read-config
+   publishes a list parameter — `sellerName` on الحيوانات and التحف — whose
+   options come from the advertisers lookup. A section it does not publish one
+   for has no advertiser filter (the lookup answers 400 there), so no picker. */
 export function advertiserFilter(config) {
-  const { categoryId, subCategoryId } = sectionOf(config);
+  const operations = config?.operations ?? {};
 
-  if (NO_ADVERTISER_CATEGORIES.has(categoryId)) return null;
-
-  if (NO_ADVERTISER_SECTIONS.has(`${categoryId}/${subCategoryId}`)) return null;
-
-  const publishes = (config?.list?.queryParameters ?? []).some(
-    (parameter) => parameter.name === ADVERTISER.parameter
+  const parameter = (config?.list?.queryParameters ?? []).find((field) =>
+    String(operations[field?.optionsSource]?.endpoint ?? "").startsWith(
+      ADVERTISERS_LOOKUP
+    )
   );
 
-  return publishes ? ADVERTISER : null;
+  if (!parameter) return null;
+
+  const { categoryId, subCategoryId } = sectionOf(config);
+
+  if (!categoryId || !subCategoryId) return null;
+
+  return {
+    parameter: parameter.name,
+    label: ADVERTISER_LABEL,
+    categoryId: Number(categoryId),
+    subCategoryId: Number(subCategoryId),
+  };
 }

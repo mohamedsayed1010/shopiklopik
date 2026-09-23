@@ -15,7 +15,6 @@ import {
 import useReadConfig from "../../hooks/useReadConfig";
 import useDynamicOptions from "../../hooks/useDynamicOptions";
 import useMarketplaceGovernorate from "../../hooks/useMarketplaceGovernorate";
-import useAdvertiserOptions from "../../hooks/useAdvertiserOptions";
 import useDynamicFilters from "../../hooks/useDynamicFilters";
 import useDynamicList from "../../hooks/useDynamicList";
 import useCharityModule from "../../hooks/charity/useCharityModule";
@@ -85,24 +84,36 @@ function MarketplaceListPage() {
     resetKey: `${categoryId}/${subCategoryId}`,
   });
 
-  const { options: advertisers, isLoading: isAdvertisersLoading } =
-    useAdvertiserOptions(endpoint, { enabled: Boolean(advertiser) });
+  /* The picker loads its own options — a page at a time from the advertisers
+     lookup of this section, searched on the server — and sets the parameter
+     read-config ties to that lookup to the advertiser's id. */
+  const advertiserParameter = advertiser?.parameter;
+
+  const advertiserLabel = advertiser?.label;
+
+  const advertiserCategoryId = advertiser?.categoryId;
+
+  const advertiserSubCategoryId = advertiser?.subCategoryId;
 
   const extraFields = useMemo(() => {
-    if (!advertiser) return NO_FIELDS;
+    if (!advertiserParameter) return NO_FIELDS;
 
     return [
       {
         key: "advertiser",
-        name: advertiser.parameter,
-        label: advertiser.label,
-        type: "enum",
-        options: advertisers,
-        optionsSource: "advertiser",
-        disabled: !advertisers.length && !isAdvertisersLoading,
+        name: advertiserParameter,
+        label: advertiserLabel,
+        type: "advertiser",
+        categoryId: advertiserCategoryId,
+        subCategoryId: advertiserSubCategoryId,
       },
     ];
-  }, [advertiser, advertisers, isAdvertisersLoading]);
+  }, [
+    advertiserParameter,
+    advertiserLabel,
+    advertiserCategoryId,
+    advertiserSubCategoryId,
+  ]);
 
   const { governorateId } = useMarketplaceGovernorate();
 
@@ -124,16 +135,6 @@ function MarketplaceListPage() {
   const { options, optionsStatus } = useDynamicOptions(config, lookupValues, {
     skipFields: unusedLookups,
   });
-
-  /* The advertiser list is read from the listings, not from a lookup, so its
-     loading state is merged in under the source name the field declares. */
-  const fieldOptionsStatus = useMemo(
-    () => ({
-      ...optionsStatus,
-      advertiser: { isLoading: isAdvertisersLoading, isError: false },
-    }),
-    [optionsStatus, isAdvertisersLoading]
-  );
 
   const {
     items,
@@ -235,7 +236,7 @@ function MarketplaceListPage() {
         <DynamicFilterRenderer
           config={config}
           options={options}
-          optionsStatus={fieldOptionsStatus}
+          optionsStatus={optionsStatus}
           extraFields={extraFields}
           filters={filters}
           pinned={pinned}

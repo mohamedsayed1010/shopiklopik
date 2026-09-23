@@ -1,5 +1,7 @@
 import { ChevronDown, Check } from "lucide-react";
 
+import AdvertiserSelect from "./AdvertiserSelect";
+
 import {
   labelClass,
   hintClass,
@@ -27,6 +29,20 @@ export default function DynamicField({
   status = {},
   onChange,
 }) {
+  /* Its options come a page at a time from the server, with a search, so it
+     is its own control — keyed by the section, so moving to another one
+     starts it over with nothing typed. */
+  if (field.type === "advertiser") {
+    return (
+      <AdvertiserSelect
+        key={`${field.categoryId}/${field.subCategoryId}`}
+        field={field}
+        value={value}
+        onChange={onChange}
+      />
+    );
+  }
+
   const label = field.label ?? field.labelEn ?? field.name;
 
   const optionValueKey = field.optionsValue || "id";

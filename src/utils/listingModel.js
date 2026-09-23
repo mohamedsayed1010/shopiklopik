@@ -231,10 +231,6 @@ function buildSeller(item) {
   };
 }
 
-export function listingSellerName(item) {
-  return buildSeller(item).name;
-}
-
 function buildPrice(item) {
   for (const [key, label] of PRICE_KEYS) {
     const value = item?.[key];

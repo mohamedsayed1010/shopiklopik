@@ -21,3 +21,26 @@ export async function getCenters(governorateId) {
 
   return response.data;
 }
+
+/** One page of the advertisers who list in a sub-category. `search` is
+    optional; an empty one is not sent. */
+export async function getAdvertisers(
+  categoryId,
+  subCategoryId,
+  { search = "", pageIndex = 1, pageSize = 20 } = {}
+) {
+  const term = String(search ?? "").trim();
+
+  const response = await axiosInstance.get(
+    `/api/lookups/advertisers/${categoryId}/${subCategoryId}`,
+    {
+      params: {
+        ...(term ? { search: term } : {}),
+        pageIndex,
+        pageSize,
+      },
+    }
+  );
+
+  return response.data;
+}
