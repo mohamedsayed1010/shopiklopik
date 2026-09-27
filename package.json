@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "seo:generate": "node scripts/generate-seo-files.mjs",
     "seo:prerender": "node scripts/prerender.mjs",
+    "seo:check": "node scripts/check-seo.mjs",
     "prebuild": "node scripts/generate-seo-files.mjs",
     "postbuild": "node scripts/prerender.mjs"
   },

@@ -1,3 +1,5 @@
+import { APP_NAME } from "../utils/brand.js";
+
 
 const isFilled = (value) =>
   value !== null && value !== undefined && String(value).trim() !== "";
@@ -74,7 +76,7 @@ export function sectionDescription({
   categoryName,
   subCategoryName,
   label,
-  siteName,
+  siteName = APP_NAME,
 } = {}) {
   const section = subCategoryName || categoryName;
 
@@ -96,7 +98,7 @@ export function sectionDescription({
 }
 
 /** A category page's description, when only the category is known. */
-export function categoryDescription({ categoryName, siteName } = {}) {
+export function categoryDescription({ categoryName, siteName = APP_NAME } = {}) {
   if (!isFilled(categoryName)) return "";
 
   const where = isFilled(siteName) ? ` على ${siteName}` : "";

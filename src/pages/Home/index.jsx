@@ -8,6 +8,7 @@ import BannerSlot from "../../components/banners/BannerSlot";
 import CategoriesSection from "../../components/Home/CategoriesSlider/index";
 import RecentlyViewed from "../../components/Home/RecentlyViewed/RecentlyViewed";
 import HomeListingSections from "../../components/Home/ListingSections/index";
+import HomeFaq from "../../components/Home/HomeFaq";
 import { PLACEMENT_KEYS } from "../../utils/bannerPlacements";
 
 /* Who the site is, from the same settings the footer prints. Its own component
@@ -49,6 +50,10 @@ export default function Home() {
           {/* The marketplace rows, after the categories and in the order
               `HOME_SECTIONS` lists them. Everything above is untouched. */}
           <HomeListingSections />
+
+          {/* How the marketplace works. Its entries are also the FAQPage in
+              the home graph above, word for word. */}
+          <HomeFaq />
         </div>
       </div>
     </>

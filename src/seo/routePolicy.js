@@ -9,6 +9,8 @@ export const PRIVATE_PREFIXES = [
   "/notifications",
   "/create-product",
   "/banner-booking",
+  "/banner-bookings",
+  "/my-banner-bookings",
 ];
 
 /** Public, but a search result pointing here would help nobody. */

@@ -12,6 +12,12 @@ import {
 
 import { ADVERTISING_SECTIONS } from "../src/content/legalContent.js";
 
+import { normalizeBrand } from "../src/utils/brand.js";
+
+import { categoryDescription, sectionDescription } from "../src/seo/descriptions.js";
+
+import { categoryLead, sectionLead, HOME_FAQ } from "../src/seo/pageCopy.js";
+
 import {
   homeGraph,
   categoryGraph,
@@ -125,8 +131,24 @@ function paragraphs(text) {
     .join("\n      ");
 }
 
+/* The pages the app's footer links to. The footer is built by the bundle, so
+   without these a document read as plain HTML would link nowhere but inward. */
+const INFO_LINKS = [
+  { href: "/", label: "الرئيسية" },
+  { href: "/about", label: "من نحن" },
+  { href: "/contact", label: "تواصل معنا" },
+  { href: "/terms", label: "الشروط والأحكام" },
+  { href: "/privacy", label: "سياسة الخصوصية" },
+];
+
+function infoNav() {
+  const items = INFO_LINKS.map((row) => `<li>${link(row.href, row.label)}</li>`).join("");
+
+  return `<nav aria-label="روابط الموقع" style="margin-top:3rem;font-size:.9rem"><ul style="list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.5rem 1.25rem">${items}</ul></nav>`;
+}
+
 function body(inner) {
-  return `<div style="${SHELL_STYLE}">\n      ${inner}\n    </div>`;
+  return `<div style="${SHELL_STYLE}">\n      ${inner}\n      ${infoNav()}\n    </div>`;
 }
 
 function jsonLd(graph) {
@@ -221,6 +243,17 @@ const HOME_CARD_STYLE = [
   "text-decoration:none",
 ].join(";");
 
+/* The questions the app's HomeFaq renders and the FAQPage publishes. */
+function homeFaq() {
+  const rows = HOME_FAQ.map((entry) => {
+    const more = entry.link ? ` ${link(entry.link.href, entry.link.label)}` : "";
+
+    return `<div style="margin:0 0 1rem"><dt style="font-weight:700;color:var(--color-ink,#101828)">${escapeHtml(entry.question)}</dt><dd style="margin:.25rem 0 0;font-size:.9rem;color:var(--color-muted,#667085)">${escapeHtml(entry.answer)}${more}</dd></div>`;
+  }).join("");
+
+  return `<h2 style="margin:2.5rem 0 1rem;font-size:1.25rem;color:var(--color-ink,#101828)">أسئلة شائعة</h2><dl style="margin:0">${rows}</dl>`;
+}
+
 function homeBody({ settings, tree, hero }) {
   const name = settings?.siteName || settings?.siteNameEn || "";
 
@@ -243,6 +276,8 @@ function homeBody({ settings, tree, hero }) {
     `    <ul style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(9rem,1fr));gap:.75rem">`,
     `          ${items}`,
     `    </ul>`,
+    `    ${homeFaq()}`,
+    `    ${infoNav()}`,
     `  </div>`,
     `</div>`,
   ]
@@ -265,7 +300,12 @@ function categoryBody({ category }) {
         { label: category.name },
       ]),
       `<h1>${escapeHtml(category.name)}</h1>`,
-      `<p>حدّد القسم للوصول إلى الإعلانات المتاحة.</p>`,
+      `<p>${escapeHtml(
+        categoryLead({
+          categoryName: category.name,
+          subCategoryCount: category.subCategories.length,
+        })
+      )}</p>`,
       items ? `<ul>\n        ${items}\n      </ul>` : "",
     ]
       .filter(Boolean)
@@ -292,9 +332,9 @@ function subCategoryBody({ category, sub }) {
         { label: sub.name },
       ]),
       `<h1>${escapeHtml(sub.name)}</h1>`,
-      `<p>إعلانات ${escapeHtml(sub.name)} داخل ${escapeHtml(
-        category.name
-      )} على ${escapeHtml("شوبيك لوبيك")}.</p>`,
+      `<p>${escapeHtml(
+        sectionLead({ categoryName: category.name, subCategoryName: sub.name })
+      )}</p>`,
       siblings
         ? `<h2>أقسام أخرى في ${escapeHtml(
             category.name
@@ -447,10 +487,19 @@ async function main() {
 
   process.env.VITE_SITE_URL = origin;
 
-  const [tree, settings] = await Promise.all([
+  const [tree, storedSettings] = await Promise.all([
     fetchCategoryTree(),
     fetchSettings(),
   ]);
+
+  /* The stored text still carries the retired spelling of the brand in places
+     (the privacy policy, at least). The app runs every settings string through
+     normalizeBrand before showing it; the documents written here must too. */
+  const settings = storedSettings
+    ? Object.fromEntries(
+        Object.entries(storedSettings).map(([key, value]) => [key, normalizeBrand(value)])
+      )
+    : null;
 
   /* Without the catalogue no category or section document is written, and
      Nginx answers an address with no document 404 — every category would
@@ -514,9 +563,7 @@ async function main() {
     routes.push({
       path: `/category/${category.id}`,
       title: suffix(category.name),
-      description: oneLine(
-        `تصفّح أقسام ${category.name} داخل ${siteName} واختر القسم المناسب للوصول إلى الإعلانات المتاحة.`
-      ),
+      description: categoryDescription({ categoryName: category.name }),
       image,
       robots: robotsFor(empty.emptyCategories.has(String(category.id))),
       body: categoryBody({ category }) + jsonLd(categoryGraph({ category })),
@@ -526,14 +573,24 @@ async function main() {
       routes.push({
         path: `/dynamic/${category.id}/${sub.id}`,
         title: suffix(sub.name),
-        description: oneLine(
-          `أحدث إعلانات ${sub.name} في قسم ${category.name} على ${siteName}.`
-        ),
+        description: sectionDescription({
+          categoryName: category.name,
+          subCategoryName: sub.name,
+        }),
         image,
         robots: robotsFor(empty.emptySubCategories.has(`${category.id}/${sub.id}`)),
         body:
           subCategoryBody({ category, sub }) +
-          jsonLd(subCategoryGraph({ category, subCategory: sub })),
+          jsonLd(
+            subCategoryGraph({
+              category,
+              subCategory: sub,
+              description: sectionLead({
+                categoryName: category.name,
+                subCategoryName: sub.name,
+              }),
+            })
+          ),
       });
     }
   }

@@ -239,6 +239,13 @@ export default defineConfig({
           /^\/sitemap\.xml$/,
           /^\/\.well-known\//,
 
+          /* Any address whose last segment has an extension is a file —
+             favicon.png, 404.html, a stale asset — never an app route, so it
+             goes to the network rather than being answered with the home
+             document. No route in src/Routes has a dot in its path, and a dot
+             in the query string does not count. */
+          /^\/(?:[^/?]+\/)*[^/?]+\.[^/?]+(?:\?.*)?$/,
+
     
           /^\/(about|contact|terms|privacy)\/?$/,
           /^\/category\/\d+\/?$/,

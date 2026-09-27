@@ -3,11 +3,13 @@ import Seo from "../../../Seo";
 import JsonLd from "../../../JsonLd";
 import { categoryDescription } from "../../../../seo/descriptions";
 import { categoryGraph } from "../../../../seo/structuredData";
+import { categoryLead } from "../../../../seo/pageCopy";
 import { Layers } from "lucide-react";
 
 import useCategoriesTree from "../../../CreateAd/useCategoriesTree";
 import SubCategoryCard from "./SubCategoryCard";
 import PageHeader from "../../../ui/PageHeader";
+import Breadcrumbs from "../../../ui/Breadcrumbs";
 import EmptyState from "../../../ui/EmptyState";
 import ErrorState from "../../../ui/ErrorState";
 import { SubCategoryGridSkeleton } from "../../../ui/Skeleton";
@@ -23,6 +25,8 @@ export default function SubCategories() {
   );
 
   const subCategories = category?.subCategories || [];
+
+  const categoryName = category?.nameAr ?? category?.name;
 
   /* A category is addressed by its numeric id, so an id that is not a positive
      integer names nothing the tree could ever hold. Answering that from the
@@ -47,10 +51,8 @@ export default function SubCategories() {
       {/* The category-s own Arabic name, straight from the tree the backend
           publishes — nothing about which category this is lives here. */}
       <Seo
-        title={category?.nameAr ?? category?.name ?? "الأقسام"}
-        description={categoryDescription({
-          categoryName: category?.nameAr ?? category?.name,
-        })}
+        title={categoryName ?? "الأقسام"}
+        description={categoryDescription({ categoryName })}
       />
 
       {/* The trail back to the home page, and the sections this category
@@ -60,10 +62,20 @@ export default function SubCategories() {
       <JsonLd data={categoryGraph({ category })} />
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        {/* The trail the BreadcrumbList above describes. */}
+        <Breadcrumbs
+          trail={[{ label: "الرئيسية", to: "/" }, { label: categoryName }]}
+          className="mb-3"
+        />
+
+        {/* The category is the page's one heading — the same h1 the
+            prerendered document carries — and the lead says what it holds. */}
         <PageHeader
-          eyebrow={category?.nameAr}
-          title="اختر القسم الفرعي"
-          subtitle="حدّد القسم للوصول إلى الإعلانات المتاحة"
+          title={categoryName}
+          subtitle={categoryLead({
+            categoryName,
+            subCategoryCount: subCategories.length,
+          })}
           className="mb-8"
         />
 

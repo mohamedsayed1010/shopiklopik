@@ -55,15 +55,15 @@ function xmlEscape(value) {
     .replace(/'/g, "&apos;");
 }
 
+/* No <lastmod>. The build knows when it ran, not when a page last changed, so
+   stamping every URL with today's date would be a signal search engines learn
+   to ignore — and it rewrote this tracked file on every build. */
 function buildSitemap(origin, entries) {
-  const today = new Date().toISOString().slice(0, 10);
-
   const urls = entries
     .map(({ path, changefreq, priority }) =>
       [
         "  <url>",
         `    <loc>${xmlEscape(origin + path)}</loc>`,
-        `    <lastmod>${today}</lastmod>`,
         `    <changefreq>${changefreq}</changefreq>`,
         `    <priority>${priority}</priority>`,
         "  </url>",

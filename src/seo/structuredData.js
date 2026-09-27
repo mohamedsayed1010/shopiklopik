@@ -19,6 +19,7 @@
 
 import { canonicalUrl } from "./siteUrl.js";
 import { categoryPath, subCategoryPath } from "./routePolicy.js";
+import { HOME_FAQ } from "./pageCopy.js";
 
 /** Drop the keys whose value the application did not actually have. */
 function present(object) {
@@ -172,6 +173,25 @@ export function collectionPageSchema({ name, description, path }) {
   });
 }
 
+/** Questions and answers the page itself renders, word for word. */
+export function faqSchema(entries) {
+  const rows = (entries ?? [])
+    .map((entry) => ({ q: text(entry?.question), a: text(entry?.answer) }))
+    .filter((row) => row.q && row.a);
+
+  if (!rows.length) return null;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: rows.map((row) => ({
+      "@type": "Question",
+      name: row.q,
+      acceptedAnswer: { "@type": "Answer", text: row.a },
+    })),
+  };
+}
+
 /**
  * The exact bytes that belong inside a `<script type="application/ld+json">`,
  * or `null` when the graph came back empty.
@@ -204,6 +224,7 @@ export function homeGraph({ settings }) {
   return [
     websiteSchema({ siteName: settings?.siteName || settings?.siteNameEn }),
     organizationSchema({ settings }),
+    faqSchema(HOME_FAQ),
   ];
 }
 

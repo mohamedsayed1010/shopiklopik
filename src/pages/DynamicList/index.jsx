@@ -4,6 +4,7 @@ import Seo from "../../components/Seo";
 import JsonLd from "../../components/JsonLd";
 import { sectionDescription } from "../../seo/descriptions";
 import { subCategoryGraph } from "../../seo/structuredData";
+import { sectionLead } from "../../seo/pageCopy";
 import {
   ChevronRight,
   ChevronLeft,
@@ -25,6 +26,7 @@ import DynamicCardRenderer from "../../components/Dynamic/DynamicCardRenderer/Dy
 import SocialPostCard from "../../components/Charity/SocialPostCard";
 import { interactionCapabilities } from "../../api/interactions/postInteractions";
 import PageHeader from "../../components/ui/PageHeader";
+import Breadcrumbs from "../../components/ui/Breadcrumbs";
 import BannerSlot from "../../components/banners/BannerSlot";
 import EmptyState from "../../components/ui/EmptyState";
 import ErrorState from "../../components/ui/ErrorState";
@@ -148,6 +150,16 @@ function MarketplaceListPage() {
   const title =
     config?.subCategory?.nameAr ?? config?.category?.nameAr ?? "الإعلانات";
 
+  const categoryName = config?.category?.nameAr ?? config?.category?.name;
+
+  const subCategoryName =
+    config?.subCategory?.nameAr ?? config?.subCategory?.name;
+
+  /* What this page is, in one sentence — shown under the heading and used as
+     the CollectionPage description, so the structured data says only what the
+     page shows. The prerendered document carries the same sentence. */
+  const lead = sectionLead({ categoryName, subCategoryName });
+
   const [isShareOpen, setShareOpen] = useState(false);
 
   const sharedAdvertiser = advertiser
@@ -186,12 +198,7 @@ function MarketplaceListPage() {
           name is appended by `Seo` from the settings rather than spelled out. */}
       <Seo
         title={title}
-        description={sectionDescription({
-          categoryName: config?.category?.nameAr ?? config?.category?.name,
-          subCategoryName:
-            config?.subCategory?.nameAr ?? config?.subCategory?.name,
-          label: config?.list?.label,
-        })}
+        description={sectionDescription({ categoryName, subCategoryName })}
       />
 
       {/* The trail back through the category, and the fact that this address
@@ -202,14 +209,23 @@ function MarketplaceListPage() {
         data={subCategoryGraph({
           category: config?.category,
           subCategory: config?.subCategory,
-          description: config?.list?.label,
+          description: lead,
         })}
       />
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <Breadcrumbs
+          trail={[
+            { label: "الرئيسية", to: "/" },
+            { label: categoryName, to: `/category/${categoryId}` },
+            { label: subCategoryName },
+          ]}
+          className="mb-3"
+        />
+
         <PageHeader
           title={title}
-          subtitle={config?.list?.label}
+          subtitle={lead}
           className="mb-6"
           action={
             // Phones already have the bottom-bar "add" action — no duplicate.
