@@ -18,6 +18,7 @@ const QUICK_LINKS = [
   { key: "create", to: "/create-product", label: "أضف إعلانك" },
   { key: "mine", to: "/profile", label: "إعلاناتي" },
   { key: "about", to: "/about", label: "من نحن" },
+  { key: "faq", to: "/faq", label: "الأسئلة الشائعة" },
   // A real destination now, rather than a mailto: the page carries every
   // channel the settings define, not just the address.
   { key: "contact", to: "/contact", label: "تواصل معنا" },

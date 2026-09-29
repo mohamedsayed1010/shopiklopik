@@ -24,6 +24,7 @@ import {
   Megaphone,
   Gift,
   UserCog,
+  CircleHelp,
 } from "lucide-react";
 
 import NotificationBell from "../Notifications/NotificationBell";
@@ -404,6 +405,15 @@ export default function Navbar() {
               ))}
             </>
           )}
+
+          {/* Public, like the home link: the questions answer signed-out
+              readers as much as anyone. */}
+          <MenuItem
+            icon={CircleHelp}
+            label="الأسئلة الشائعة"
+            to="/faq"
+            onClick={closeDrawer}
+          />
 
           {/* Same control as the header's, worded rather than iconic, so the
               drawer reads as a list of choices. Closing on toggle would hide

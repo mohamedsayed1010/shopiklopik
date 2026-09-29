@@ -16,10 +16,17 @@ import { normalizeBrand } from "../src/utils/brand.js";
 
 import { categoryDescription, sectionDescription } from "../src/seo/descriptions.js";
 
-import { categoryLead, sectionLead, HOME_FAQ } from "../src/seo/pageCopy.js";
+import {
+  categoryLead,
+  sectionLead,
+  FAQ_ENTRIES,
+  FAQ_TITLE,
+  FAQ_DESCRIPTION,
+} from "../src/seo/pageCopy.js";
 
 import {
   homeGraph,
+  faqGraph,
   categoryGraph,
   subCategoryGraph,
   serializeGraph,
@@ -136,6 +143,7 @@ function paragraphs(text) {
 const INFO_LINKS = [
   { href: "/", label: "الرئيسية" },
   { href: "/about", label: "من نحن" },
+  { href: "/faq", label: "الأسئلة الشائعة" },
   { href: "/contact", label: "تواصل معنا" },
   { href: "/terms", label: "الشروط والأحكام" },
   { href: "/privacy", label: "سياسة الخصوصية" },
@@ -243,17 +251,6 @@ const HOME_CARD_STYLE = [
   "text-decoration:none",
 ].join(";");
 
-/* The questions the app's HomeFaq renders and the FAQPage publishes. */
-function homeFaq() {
-  const rows = HOME_FAQ.map((entry) => {
-    const more = entry.link ? ` ${link(entry.link.href, entry.link.label)}` : "";
-
-    return `<div style="margin:0 0 1rem"><dt style="font-weight:700;color:var(--color-ink,#101828)">${escapeHtml(entry.question)}</dt><dd style="margin:.25rem 0 0;font-size:.9rem;color:var(--color-muted,#667085)">${escapeHtml(entry.answer)}${more}</dd></div>`;
-  }).join("");
-
-  return `<h2 style="margin:2.5rem 0 1rem;font-size:1.25rem;color:var(--color-ink,#101828)">أسئلة شائعة</h2><dl style="margin:0">${rows}</dl>`;
-}
-
 function homeBody({ settings, tree, hero }) {
   const name = settings?.siteName || settings?.siteNameEn || "";
 
@@ -276,7 +273,6 @@ function homeBody({ settings, tree, hero }) {
     `    <ul style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(9rem,1fr));gap:.75rem">`,
     `          ${items}`,
     `    </ul>`,
-    `    ${homeFaq()}`,
     `    ${infoNav()}`,
     `  </div>`,
     `</div>`,
@@ -379,6 +375,24 @@ function contentBody({ title, description, text, append }) {
     ]
       .filter(Boolean)
       .join("\n      ")
+  );
+}
+
+/* The questions the app's FaqList renders and the FAQPage publishes. */
+function faqBody() {
+  const rows = FAQ_ENTRIES.map((entry) => {
+    const more = entry.link ? ` ${link(entry.link.href, entry.link.label)}` : "";
+
+    return `<div style="margin:0 0 1rem"><dt style="font-weight:700;color:var(--color-ink,#101828)">${escapeHtml(entry.question)}</dt><dd style="margin:.25rem 0 0;font-size:.9rem;color:var(--color-muted,#667085)">${escapeHtml(entry.answer)}${more}</dd></div>`;
+  }).join("");
+
+  return body(
+    [
+      breadcrumb([{ href: "/", label: "الرئيسية" }, { label: FAQ_TITLE }]),
+      `<h1>${escapeHtml(FAQ_TITLE)}</h1>`,
+      `<p>${escapeHtml(FAQ_DESCRIPTION)}</p>`,
+      `<dl style="margin:0">${rows}</dl>`,
+    ].join("\n      ")
   );
 }
 
@@ -644,6 +658,15 @@ async function main() {
       }),
     });
   }
+
+  /* Written by the code, not the settings, so it always has text. */
+  routes.push({
+    path: "/faq",
+    title: suffix(FAQ_TITLE),
+    description: oneLine(FAQ_DESCRIPTION),
+    image,
+    body: faqBody() + jsonLd(faqGraph()),
+  });
 
   if (settings) {
     routes.push({

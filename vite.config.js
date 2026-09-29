@@ -247,7 +247,7 @@ export default defineConfig({
           /^\/(?:[^/?]+\/)*[^/?]+\.[^/?]+(?:\?.*)?$/,
 
     
-          /^\/(about|contact|terms|privacy)\/?$/,
+          /^\/(about|contact|terms|privacy|faq)\/?$/,
           /^\/category\/\d+\/?$/,
           /^\/dynamic\/\d+\/\d+\/?$/,
         ],

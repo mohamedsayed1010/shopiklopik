@@ -1,5 +1,5 @@
 /**
- * The visible copy the public catalogue pages open with, and the home page's
+ * The visible copy the public catalogue pages open with, and the FAQ page's
  * questions and answers.
  *
  * Shared by the React pages and `scripts/prerender.mjs`, so the HTML a crawler
@@ -52,13 +52,19 @@ export function sectionLead({ categoryName, subCategoryName }) {
   return `«${subCategoryName}» قسم فرعي${within} في ${APP_NAME}، ${MARKET_SCOPE}. تعرض هذه الصفحة ما نُشر فيه حاليًا بعد مراجعة الإدارة.`;
 }
 
+/** The FAQ page's heading and description, shared with its prerendered
+    document. The description names only what the questions below cover. */
+export const FAQ_TITLE = "الأسئلة الشائعة";
+
+export const FAQ_DESCRIPTION = `إجابات عن الأسئلة الشائعة حول ${APP_NAME}: تصفّح الإعلانات، ونشر إعلان، والتواصل مع المُعلن، وحذف الحساب.`;
+
 /**
- * The home page's questions. Each answer describes what the application
+ * The FAQ page's questions. Each answer describes what the application
  * itself does — the sign-in wall on a listing, the review step before
  * publishing, the contact option a listing page shows — and is rendered on the
  * page, not only in the structured data.
  */
-export const HOME_FAQ = [
+export const FAQ_ENTRIES = [
   {
     question: `ما هو ${APP_NAME}؟`,
     answer: `${APP_NAME} ${MARKET_SCOPE}. تُعرض الإعلانات مرتبة في أقسام رئيسية، ويتفرع كل قسم إلى أقسام فرعية.`,

@@ -19,7 +19,7 @@
 
 import { canonicalUrl } from "./siteUrl.js";
 import { categoryPath, subCategoryPath } from "./routePolicy.js";
-import { HOME_FAQ } from "./pageCopy.js";
+import { FAQ_ENTRIES, FAQ_TITLE } from "./pageCopy.js";
 
 /** Drop the keys whose value the application did not actually have. */
 function present(object) {
@@ -224,7 +224,17 @@ export function homeGraph({ settings }) {
   return [
     websiteSchema({ siteName: settings?.siteName || settings?.siteNameEn }),
     organizationSchema({ settings }),
-    faqSchema(HOME_FAQ),
+  ];
+}
+
+/** The FAQ page: where it sits, and the questions it renders. */
+export function faqGraph() {
+  return [
+    breadcrumbSchema([
+      { name: "الرئيسية", path: "/" },
+      { name: FAQ_TITLE, path: "/faq" },
+    ]),
+    faqSchema(FAQ_ENTRIES),
   ];
 }
 

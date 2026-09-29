@@ -14,6 +14,7 @@ export const AboutPage = lazy(() => import("../pages/About"));
 export const ContactPage = lazy(() => import("../pages/Contact"));
 export const TermsPage = lazy(() => import("../pages/Terms"));
 export const PrivacyPage = lazy(() => import("../pages/Privacy"));
+export const FaqPage = lazy(() => import("../pages/Faq"));
 export const NotFound = lazy(() => import("../pages/NotFound"));
 
 /* Public — the Google Play account-deletion URL. See the page itself. */

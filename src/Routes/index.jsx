@@ -20,6 +20,7 @@ import {
   ContactPage,
   TermsPage,
   PrivacyPage,
+  FaqPage,
   DeleteAccountPage,
   NotFound,
   Profile,
@@ -176,6 +177,10 @@ const routes = [
     {path: "contact", element: <ContactPage/>},
     {path: "terms", element: <TermsPage/>},
     {path: "privacy", element: <PrivacyPage/>},
+
+    // How the marketplace works, in questions. Written by the code
+    // (`seo/pageCopy.js`), not the settings; it used to close the home page.
+    {path: "faq", element: <FaqPage/>},
 
     // The account-deletion page Google Play links to. Deliberately NOT behind
     // `ProtectedRoute`: anyone may read how deletion works. The deletion itself
