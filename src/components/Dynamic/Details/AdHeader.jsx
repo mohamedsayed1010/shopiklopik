@@ -93,7 +93,13 @@ export default function AdHeader({ model, hasReported = false, onReport }) {
 
       {hasMeta && (
         <div className="mt-5 flex flex-wrap items-center gap-2">
-          {model.location && <MetaChip icon={MapPin}>{model.location}</MetaChip>}
+          {/* The place is what people tap for directions, so it opens the
+              pin too whenever the listing has one. */}
+          {model.location && (
+            <MetaChip icon={MapPin} href={model.mapUrl}>
+              {model.location}
+            </MetaChip>
+          )}
 
           {model.mapUrl && (
             <MetaChip icon={Navigation} href={model.mapUrl}>

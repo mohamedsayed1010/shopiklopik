@@ -18,6 +18,8 @@ import { pickFieldIcon } from "./adFieldIcons";
 
 import { resolveMediaUrl } from "./mediaUrl";
 
+import { locationValue } from "./dynamicForm";
+
 /* Ordered by specificity: the first key that carries a real value wins. */
 const TITLE_KEYS = [
   "title",
@@ -130,6 +132,10 @@ const ADDRESS_KEYS = [
 
 const MAP_KEYS = ["googleMaps", "googleMapsUrl", "mapUrl", "mapsLink"];
 
+/* What a `location` form field writes (`writesFields: Latitude, Longitude`),
+   as the details endpoints return it. `hasLocation` only restates it. */
+const COORDINATE_KEYS = ["latitude", "longitude", "hasLocation"];
+
 const CREATED_KEYS = ["createdAt", "createdOn", "publishedAt", "postedAt"];
 
 const EXPIRY_KEYS = ["expireAt", "expiresAt", "expiryDate", "expirationDate"];
@@ -225,6 +231,19 @@ function asLink(value) {
   return typeof value === "string" && ABSOLUTE_URL.test(value.trim())
     ? value.trim()
     : null;
+}
+
+/** A Google Maps link to the listing's own pin, or null when it has none. */
+function coordinatesLink(data) {
+  const point = locationValue({
+    latitude: data?.latitude,
+    longitude: data?.longitude,
+  });
+
+  // 0,0 is the default of a non-nullable column, not a place anyone posted.
+  if (!point || (point.latitude === 0 && point.longitude === 0)) return null;
+
+  return `https://www.google.com/maps?q=${point.latitude},${point.longitude}`;
 }
 
 /** Photos come back as bare strings, `{ url, isPrimary }` rows, or both. */
@@ -561,6 +580,12 @@ export function buildAdModel({ data, config, schema, options = {} }) {
 
   consume(...MAP_KEYS);
 
+  /* Modules with a map picker (rescues, blood requests) store the pin as
+     coordinates rather than a link. A pasted link still wins. */
+  const mapUrl = asLink(mapEntry.value) ?? coordinatesLink(data);
+
+  consume(...COORDINATE_KEYS);
+
   const createdEntry = pick(data, CREATED_KEYS);
 
   consume(...CREATED_KEYS);
@@ -766,7 +791,7 @@ export function buildAdModel({ data, config, schema, options = {} }) {
     seller,
     location,
     address: addressText && addressText !== location ? addressText : null,
-    mapUrl: asLink(mapEntry.value),
+    mapUrl,
     badges: uniqueBadges,
     meta,
     specGroups,
