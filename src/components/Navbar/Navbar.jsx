@@ -183,6 +183,10 @@ export default function Navbar() {
             tone="light"
             src={settings.logoUrl || undefined}
             name={settings.siteName || undefined}
+            /* Signed in, the four account controls and the full lockup need
+               ~383px; below that the mark alone stands in for the wordmark
+               (the link keeps its aria-label) so the menu stays on screen. */
+            wordClassName={token ? "max-[389px]:hidden" : ""}
           />
 
           {/* Desktop navigation. Shown to everyone now that the home page is

@@ -124,7 +124,10 @@ export default function ContactPage() {
           </ul>
         ) : (
           <>
-            <ul className="mt-7 grid gap-4 sm:grid-cols-2">
+            {/* `grid-cols-1`, not the implicit `auto` track: that one grows to
+                the longest unbroken value (the email) and pushes the cards
+                past a 320px screen instead of letting `truncate` work. */}
+            <ul className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {/* `key` is pulled out rather than spread: React warns when a
                   props object carrying a `key` is spread into JSX, because the
                   key would be read as a prop as well as an identity. */}

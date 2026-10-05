@@ -74,6 +74,8 @@ export default function Logo({
   /** The wordmark, when the site has been renamed in the settings. */
   name,
   className = "",
+  /** Extra classes for the wordmark, e.g. to drop it where space runs out. */
+  wordClassName = "",
 }) {
   const scale = SIZES[size] ?? SIZES.md;
 
@@ -89,7 +91,7 @@ export default function Logo({
         } shrink-0 object-contain`}
       />
 
-      <span className="flex min-w-0 flex-col">
+      <span className={`flex min-w-0 flex-col ${wordClassName}`}>
         <span
           className={`${scale.word} font-bold leading-tight tracking-tight`}
         >

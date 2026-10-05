@@ -41,7 +41,9 @@ export default function AdminReferralsFilters() {
   return (
     <div className="rounded-3xl border border-line bg-surface p-4 shadow-xs sm:p-5">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-0 flex-1">
+        {/* `basis-64`: with a zero basis the row never wraps, and on a phone
+            the box shrank to ~80px beside the button. */}
+        <div className="relative min-w-0 flex-1 basis-64">
           <Search
             size={17}
             aria-hidden="true"

@@ -70,7 +70,9 @@ export default function AdminAdsFilters() {
   return (
     <section className="rounded-2xl border border-line bg-surface p-4 shadow-xs sm:p-5">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-0 flex-1">
+        {/* `basis-64`: with a zero basis the row never wraps, and on a phone
+            the box shrank to ~100px beside the button. */}
+        <div className="relative min-w-0 flex-1 basis-64">
           <Search
             size={18}
             aria-hidden="true"

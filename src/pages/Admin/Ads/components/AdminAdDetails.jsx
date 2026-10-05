@@ -38,13 +38,15 @@ function Section({ title, icon: Icon, children }) {
 function Row({ label, value, dir }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-line py-2.5 last:border-0">
-      <dt className="min-w-0 max-w-[70%] break-words text-[13px] text-muted">
+      {/* `min-w-min`: a long value (an id at 320px) may squeeze the label to
+          its longest word, never through it ("المعرّ / ف"). */}
+      <dt className="min-w-min max-w-[70%] break-words text-[13px] text-muted">
         {label}
       </dt>
 
       <dd
         dir={dir}
-        className="min-w-0 text-end text-[13.5px] font-medium text-ink-soft"
+        className="min-w-0 break-words text-end text-[13.5px] font-medium text-ink-soft"
       >
         {value ?? "—"}
       </dd>
