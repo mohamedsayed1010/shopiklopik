@@ -233,15 +233,18 @@ export default function DynamicAdForm() {
               onBlur={handleBlur}
             />
 
-            {/* Submit */}
-            <div className="sticky bottom-0 z-20 mt-6 border-t border-line bg-canvas/95 py-4 backdrop-blur-sm max-lg:bottom-16">
-              <div className="flex flex-col gap-3 sm:flex-row-reverse">
+            {/* Submit — sticky rather than fixed, so it stays in flow: it pins
+                while the form scrolls and settles below the last section
+                instead of covering it. Below lg it clears the BottomNav, whose
+                height includes the safe-area inset. */}
+            <div className="sticky bottom-0 z-20 mt-6 border-t border-line bg-canvas/95 py-4 backdrop-blur-sm max-lg:bottom-[calc(4rem+env(safe-area-inset-bottom))]">
+              <div className="flex flex-row-reverse gap-3">
                 <Button
                   type="submit"
                   variant="gold"
                   size="lg"
                   loading={createAdMutation.isPending}
-                  className="sm:flex-1"
+                  className="min-w-0 flex-1"
                 >
                   {createAdMutation.isPending ? "جارٍ النشر..." : "نشر الإعلان"}
                 </Button>
@@ -252,9 +255,9 @@ export default function DynamicAdForm() {
                   size="lg"
                   onClick={() => navigate(-1)}
                   disabled={createAdMutation.isPending}
-                  className="sm:w-40"
+                  className="w-28 shrink-0 sm:w-40"
                 >
-                  رجوع
+                  تراجع
                 </Button>
               </div>
 
