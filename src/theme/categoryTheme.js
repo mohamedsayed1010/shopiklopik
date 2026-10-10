@@ -1,18 +1,23 @@
 import {
   Amphora,
   BriefcaseBusiness,
+  Building,
   Building2,
   Car,
   Dog,
   HandHeart,
   House,
+  MapPinned,
   Package,
   PackageSearch,
   Shirt,
+  ShoppingBag,
   Smartphone,
   Sofa,
   Sparkles,
+  Stethoscope,
   Tractor,
+  UtensilsCrossed,
   Wrench,
 } from "lucide-react";
 
@@ -138,6 +143,48 @@ const THEMES = {
     accentDark: "#8d90a5",
     soft: "#eeeff4",
     keywords: ["خدم", "service" ],
+  },
+
+  /* Below the rest on purpose: matching stops at the first theme, so these
+     can only claim names that no theme above already resolves. */
+  health: {
+    icon: Stethoscope,
+    accent: "#0f7a55",
+    accentDark: "#2fb585",
+    soft: "#e7f5ef",
+    keywords: ["صحتي", "صحة", "صحي", "طبي", "أطباء", "اطباء", "مستشف", "health", "medical"],
+  },
+
+  offices: {
+    icon: Building,
+    accent: "#2f5d62",
+    accentDark: "#62a9b0",
+    soft: "#e8f2f3",
+    keywords: ["مكاتب", "مكتب", "office"],
+  },
+
+  restaurants: {
+    icon: UtensilsCrossed,
+    accent: "#c2410c",
+    accentDark: "#f0814a",
+    soft: "#fdeee6",
+    keywords: ["مطاعم", "مطعم", "كافيه", "كافيهات", "مقهى", "مقاهي", "restaurant", "cafe"],
+  },
+
+  onlineShopping: {
+    icon: ShoppingBag,
+    accent: "#a3367a",
+    accentDark: "#d977b5",
+    soft: "#f9ebf4",
+    keywords: ["تسوق", "أونلاين", "اونلاين", "shopping", "online"],
+  },
+
+  governorateGuide: {
+    icon: MapPinned,
+    accent: "#8a6400",
+    accentDark: "#e0ac2e",
+    soft: "#faf3df",
+    keywords: ["دليل", "محافظت", "guide"],
   },
 };
 
