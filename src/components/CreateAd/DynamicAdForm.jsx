@@ -237,18 +237,9 @@ export default function DynamicAdForm() {
                 while the form scrolls and settles below the last section
                 instead of covering it. Below lg it clears the BottomNav, whose
                 height includes the safe-area inset. */}
-            <div className="sticky bottom-0 z-20 mt-6 border-t border-line bg-canvas/95 py-4 backdrop-blur-sm max-lg:bottom-[calc(4rem+env(safe-area-inset-bottom))]">
+            <div className=" mt-6 border-t border-line bg-canvas/95 py-4 backdrop-blur-sm max-lg:bottom-[calc(4rem+env(safe-area-inset-bottom))]">
               <div className="flex flex-row-reverse gap-3">
-                <Button
-                  type="submit"
-                  variant="gold"
-                  size="lg"
-                  loading={createAdMutation.isPending}
-                  className="min-w-0 flex-1"
-                >
-                  {createAdMutation.isPending ? "جارٍ النشر..." : "نشر الإعلان"}
-                </Button>
-
+                
                 <Button
                   type="button"
                   variant="outline"
@@ -259,6 +250,16 @@ export default function DynamicAdForm() {
                 >
                   تراجع
                 </Button>
+                <Button
+                  type="submit"
+                  variant="gold"
+                  size="lg"
+                  loading={createAdMutation.isPending}
+                  className="min-w-0 flex-1"
+                >
+                  {createAdMutation.isPending ? "جارٍ النشر..." : "نشر الإعلان"}
+                </Button>
+
               </div>
 
               <p className="mt-3 text-center text-xs text-muted">
