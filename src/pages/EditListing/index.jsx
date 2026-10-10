@@ -416,7 +416,7 @@ export default function EditListingPage() {
                 : "الصور والملفات المرفوعة سابقًا محفوظة كما هي. أضف ملفات جديدة فقط إذا أردت تحديثها."}
             </p>
 
-            <div className="sticky bottom-0 z-20 mt-6 border-t border-line bg-canvas/95 py-4 backdrop-blur-sm max-lg:bottom-[calc(4rem+env(safe-area-inset-bottom))]">
+            <div className=" mt-6 border-t border-line bg-canvas/95 py-4 backdrop-blur-sm max-lg:bottom-[calc(4rem+env(safe-area-inset-bottom))]">
               <div className="flex flex-row-reverse gap-3">
                 <Button
                   type="submit"
