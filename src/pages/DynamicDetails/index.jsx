@@ -6,6 +6,10 @@ import { listingDescription, listingTitle } from "../../seo/descriptions";
 import { ChevronLeft, ChevronRight, Home } from "lucide-react";
 
 import useReadConfig from "../../hooks/useReadConfig";
+import {
+  INACTIVE_SUBCATEGORY_MESSAGE,
+  useIsInactiveSubCategory,
+} from "../../hooks/useListingModuleType";
 import useDynamicDetails from "../../hooks/useDynamicDetails";
 import useDynamicOptions from "../../hooks/useDynamicOptions";
 import useAdSchema from "../../hooks/useAdSchema";
@@ -39,8 +43,15 @@ function MarketplaceDetailsPage() {
     config,
     isLoading: isConfigLoading,
     isError: isConfigError,
+    error: configError,
     refetch: refetchConfig,
   } = useReadConfig(Number(categoryId), Number(subCategoryId));
+
+  const isInactive = useIsInactiveSubCategory(
+    categoryId,
+    subCategoryId,
+    configError
+  );
 
   const endpoint = useMemo(() => {
     if (!config?.details?.endpoint) return "";
@@ -166,6 +177,11 @@ function MarketplaceDetailsPage() {
 
           {isBusy ? (
             <DetailsSkeleton />
+          ) : isInactive ? (
+            <ErrorState
+              title={INACTIVE_SUBCATEGORY_MESSAGE}
+              description="إعلانات هذا القسم غير متاحة الآن. يمكنك تصفّح باقي الأقسام."
+            />
           ) : isConfigError || isError ? (
             <ErrorState
               title="تعذّر تحميل الإعلان"

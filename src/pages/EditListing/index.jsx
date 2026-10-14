@@ -4,6 +4,10 @@ import Seo from "../../components/Seo";
 import { Lock, RotateCcw, X } from "lucide-react";
 
 import useReadConfig from "../../hooks/useReadConfig";
+import {
+  INACTIVE_SUBCATEGORY_MESSAGE,
+  useIsInactiveSubCategory,
+} from "../../hooks/useListingModuleType";
 import useCharityModule from "../../hooks/charity/useCharityModule";
 import useDynamicDetails from "../../hooks/useDynamicDetails";
 import useCreateAdForm from "../../components/CreateAd/useCreateAdForm";
@@ -60,6 +64,7 @@ export default function EditListingPage() {
     config,
     isLoading: isConfigLoading,
     isError: isConfigError,
+    error: configError,
     refetch: refetchConfig,
   } = useReadConfig(Number(categoryId), Number(subCategoryId));
 
@@ -90,7 +95,14 @@ export default function EditListingPage() {
     formData,
     isLoading: isFormLoading,
     isError: isFormError,
+    error: formError,
   } = useCreateAdForm(categoryId, subCategoryId);
+
+  const isInactive = useIsInactiveSubCategory(
+    categoryId,
+    subCategoryId,
+    configError ?? formError
+  );
 
   const fields = useMemo(() => formData?.fields ?? [], [formData]);
 
@@ -310,6 +322,11 @@ export default function EditListingPage() {
 
         {isBusy ? (
           <FormSkeleton />
+        ) : isInactive ? (
+          <ErrorState
+            title={INACTIVE_SUBCATEGORY_MESSAGE}
+            description="لا يمكن تعديل إعلانات هذا القسم الآن. يمكنك تصفّح باقي الأقسام."
+          />
         ) : isError || !formData ? (
           <ErrorState
             title="تعذّر تحميل الإعلان للتعديل"

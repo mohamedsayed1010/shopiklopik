@@ -39,6 +39,10 @@ import { selectClass } from "../../components/ui/formStyles";
 import { advertiserFilter, hiddenFilterNames } from "../../utils/filterPanel";
 import { PLACEMENT_KEYS } from "../../utils/bannerPlacements";
 import useCreateAdTarget from "../../hooks/useCreateAdTarget";
+import {
+  INACTIVE_SUBCATEGORY_MESSAGE,
+  useIsInactiveSubCategory,
+} from "../../hooks/useListingModuleType";
 
 /** Stable empties, so a section without an advertiser picker never re-renders. */
 const NO_FIELDS = [];
@@ -54,8 +58,15 @@ function MarketplaceListPage() {
     config,
     isLoading: isConfigLoading,
     isError: isConfigError,
+    error: configError,
     refetch: refetchConfig,
   } = useReadConfig(Number(categoryId), Number(subCategoryId));
+
+  const isInactive = useIsInactiveSubCategory(
+    categoryId,
+    subCategoryId,
+    configError
+  );
 
   const endpoint = useMemo(() => config?.list?.endpoint ?? "", [config]);
 
@@ -183,11 +194,18 @@ function MarketplaceListPage() {
   if (isConfigError) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <ErrorState
-          title="تعذّر فتح هذا القسم"
-          description="لم نتمكن من تحميل بيانات القسم. حاول مرة أخرى بعد قليل."
-          onRetry={refetchConfig}
-        />
+        {isInactive ? (
+          <ErrorState
+            title={INACTIVE_SUBCATEGORY_MESSAGE}
+            description="لا يمكن تصفّح هذا القسم أو إضافة إعلانات إليه الآن. يمكنك تصفّح باقي الأقسام."
+          />
+        ) : (
+          <ErrorState
+            title="تعذّر فتح هذا القسم"
+            description="لم نتمكن من تحميل بيانات القسم. حاول مرة أخرى بعد قليل."
+            onRetry={refetchConfig}
+          />
+        )}
       </div>
     );
   }

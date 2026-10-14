@@ -7,6 +7,10 @@ import { joinFieldErrors } from "../../utils/apiErrors";
 import { reportApiError } from "../../utils/reportApiError";
 import ErrorSummary from "../ui/ErrorSummary";
 import useCreateAdForm from "./useCreateAdForm";
+import {
+  INACTIVE_SUBCATEGORY_MESSAGE,
+  useIsInactiveSubCategory,
+} from "../../hooks/useListingModuleType";
 import useDynamicForm from "./useDynamicForm";
 import useCreateAdSubmit from "./useCreateAdSubmit";
 import DynamicFormSections from "./DynamicFormSections";
@@ -40,10 +44,12 @@ export default function DynamicAdForm() {
 
   const { categoryId, subCategoryId } = useParams();
 
-  const { formData, isLoading, isError } = useCreateAdForm(
+  const { formData, isLoading, isError, error } = useCreateAdForm(
     categoryId,
     subCategoryId
   );
+
+  const isInactive = useIsInactiveSubCategory(categoryId, subCategoryId, error);
 
   const fields = useMemo(() => formData?.fields ?? [], [formData]);
 
@@ -205,6 +211,11 @@ export default function DynamicAdForm() {
 
         {isLoading ? (
           <FormSkeleton />
+        ) : isInactive ? (
+          <ErrorState
+            title={INACTIVE_SUBCATEGORY_MESSAGE}
+            description="لا يمكن تصفّح هذا القسم أو إضافة إعلانات إليه الآن. يمكنك تصفّح باقي الأقسام."
+          />
         ) : isError || !formData ? (
           <ErrorState
             title="تعذّر تحميل نموذج الإعلان"

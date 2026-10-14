@@ -53,3 +53,23 @@ export default function useListingModuleType(categoryId, subCategoryId) {
     isError,
   };
 }
+
+export const INACTIVE_SUBCATEGORY_MESSAGE = "هذا القسم معطّل حاليًا.";
+
+/* An inactive subcategory answers read-config and create-ad-form with the same
+   404 as an id that never existed ("القسم الفرعي 51 مش موجود."), but metadata
+   still lists its module. So a 404 for a pair metadata knows is a section that
+   was switched off, not a mistyped address. Metadata is only read on a 404. */
+export function useIsInactiveSubCategory(categoryId, subCategoryId, error) {
+  const notFound = error?.response?.status === 404;
+
+  const { data } = useQuery({ ...METADATA_QUERY, enabled: notFound });
+
+  if (!notFound) return false;
+
+  return (data?.data?.modules ?? []).some(
+    (module) =>
+      Number(module?.categoryId) === Number(categoryId) &&
+      Number(module?.subCategoryId) === Number(subCategoryId)
+  );
+}
