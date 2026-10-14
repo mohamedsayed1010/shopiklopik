@@ -67,6 +67,7 @@ function ActionDialogs({
   approveMutation,
   rejectMutation,
   suspendMutation,
+  republishMutation,
   deleteMutation,
 }) {
   const { rejectionReasons } = useAdminAdsMetadata();
@@ -280,6 +281,20 @@ function ActionDialogs({
           placeholder="سبب الإيقاف (اختياري)…"
         />
       </Modal>
+
+      {/* ---------------------------- republish -------------------------- */}
+      <ConfirmDialog
+        open={action === "republish"}
+        tone="primary"
+        title="إعادة نشر الإعلان؟"
+        description={`سيُعاد نشر "${
+          ad.title || "الإعلان"
+        }"، ويحدّد النظام تاريخ انتهاء صلاحيته الجديد.`}
+        confirmLabel="إعادة النشر"
+        loading={republishMutation.isPending}
+        onConfirm={() => republishMutation.mutate(target, { onSuccess: close })}
+        onClose={republishMutation.isPending ? undefined : close}
+      />
 
       {/* ----------------------------- delete ---------------------------- */}
       <ConfirmDialog

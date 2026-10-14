@@ -100,6 +100,13 @@ export async function suspendAdminAd({ type, id, notes }) {
   return response.data;
 }
 
+/** No body: the contract takes only the path. Eligibility is the server's call. */
+export async function republishAdminAd({ type, id }) {
+  const response = await axiosInstance.patch(`${BASE}/${type}/${id}/republish`);
+
+  return response.data;
+}
+
 export async function deleteAdminAd({ type, id }) {
   const response = await axiosInstance.delete(`${BASE}/${type}/${id}`);
 

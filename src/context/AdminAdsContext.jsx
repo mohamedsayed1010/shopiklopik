@@ -87,7 +87,7 @@ export function AdminAdsProvider({ children }) {
   /** The ad whose details sheet is open: `{ type, id, title }` or null. */
   const [selectedAd, setSelectedAd] = useState(null);
 
-  /** Which dialog is up: "approve" | "reject" | "suspend" | "delete" | null. */
+  /** Which dialog is up: "approve" | "reject" | "suspend" | "republish" | "delete" | null. */
   const [action, setAction] = useState(null);
 
   /* Moving to another tab is a place the reader can go back from, so it is the

@@ -6,6 +6,7 @@ import {
   approveAdminAd,
   deleteAdminAd,
   rejectAdminAd,
+  republishAdminAd,
   suspendAdminAd,
 } from "../../api/admin/ads/adminAdsEndpoints";
 import {
@@ -14,6 +15,29 @@ import {
   adminPendingCountKey,
 } from "./adminAdsKeys";
 import { apiError, apiMessage } from "../../pages/Profile/profileCache";
+
+const REPUBLISH_STATUS_TEXT = {
+  401: "انتهت جلستك. سجّل الدخول مرة أخرى ثم أعد المحاولة.",
+  403: "لا تملك صلاحية إعادة نشر الإعلانات.",
+  404: "لم يعد هذا الإعلان موجودًا.",
+  429: "طلبات كثيرة خلال وقت قصير. انتظر قليلًا ثم أعد المحاولة.",
+};
+
+/** The validation family: the server says why this ad is not eligible. */
+const REPUBLISH_EXPLAINED = new Set([400, 409, 422]);
+
+/* A validation answer is the server explaining why this ad cannot be
+   republished, so its own words are shown. Everything else gets fixed text: a
+   5xx body may carry internals, and the other statuses always mean one thing. */
+function republishError(error) {
+  const status = error?.response?.status;
+
+  const fallback = "تعذّرت إعادة نشر الإعلان. حاول مرة أخرى لاحقًا.";
+
+  if (REPUBLISH_EXPLAINED.has(status)) return apiError(error, fallback);
+
+  return REPUBLISH_STATUS_TEXT[status] ?? fallback;
+}
 
 export default function useAdminAdActions({ onActionSuccess } = {}) {
   const queryClient = useQueryClient();
@@ -64,6 +88,23 @@ export default function useAdminAdActions({ onActionSuccess } = {}) {
     ...handlers("تم إيقاف الإعلان", "تعذّر إيقاف الإعلان"),
   });
 
+  const republishMutation = useMutation({
+    mutationFn: republishAdminAd,
+
+    onSuccess: (response, variables) => {
+      toast.success(apiMessage(response, "تمت إعادة نشر الإعلان"));
+
+      onActionSuccess?.(variables);
+    },
+
+    onError: (error) => {
+      toast.error(republishError(error));
+    },
+
+    // The lists, the stat cards and the details all re-read the new dates.
+    onSettled: (_data, _error, variables) => refresh(variables),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: deleteAdminAd,
 
@@ -94,13 +135,21 @@ export default function useAdminAdActions({ onActionSuccess } = {}) {
       approveMutation,
       rejectMutation,
       suspendMutation,
+      republishMutation,
       deleteMutation,
       isPending:
         approveMutation.isPending ||
         rejectMutation.isPending ||
         suspendMutation.isPending ||
+        republishMutation.isPending ||
         deleteMutation.isPending,
     }),
-    [approveMutation, rejectMutation, suspendMutation, deleteMutation]
+    [
+      approveMutation,
+      rejectMutation,
+      suspendMutation,
+      republishMutation,
+      deleteMutation,
+    ]
   );
 }

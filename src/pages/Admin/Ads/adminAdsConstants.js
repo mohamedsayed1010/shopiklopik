@@ -7,6 +7,8 @@ import {
   XCircle,
 } from "lucide-react";
 
+import { parseApiDate } from "../../../utils/format";
+
 /** Verified against `/ads/metadata`, which names all four. */
 export const MODERATION_STATUS = {
   pending: 0,
@@ -103,4 +105,46 @@ export function statusLabel(status) {
   if (!status) return "—";
 
   return STATUS_AR[String(status).toLowerCase()] ?? String(status);
+}
+
+/** Republishing is offered in the last days of an ad's life, not before. */
+export const REPUBLISH_WINDOW_DAYS = 5;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/* An expired ad is never assumed eligible, and neither is one whose expiry
+   cannot be read. `remainingDays` wins when present because it is the number
+   the table shows; `expireAt` decides what it cannot — whether a 0 means
+   "expires later today" or "already over" — and stands in when it is absent.
+   The API sends `expireAt` without a zone ("2026-11-12T22:25:39.2990052"), so
+   it goes through `parseApiDate`, which reads it as UTC like every other
+   server date, never through `Date.parse`, which would read it as local time. */
+export function isInRepublishWindow(ad, now = Date.now()) {
+  if (!ad || ad.isExpired === true) return false;
+
+  if (
+    String(ad.status ?? "").toLowerCase() === "expired" ||
+    ad.status === LISTING_STATUS.expired
+  ) {
+    return false;
+  }
+
+  const expireAt = parseApiDate(ad.expireAt)?.getTime() ?? Number.NaN;
+
+  const hasExpiry = Number.isFinite(expireAt);
+
+  if (hasExpiry && expireAt <= now) return false;
+
+  const days =
+    typeof ad.remainingDays === "number" && Number.isFinite(ad.remainingDays)
+      ? ad.remainingDays
+      : null;
+
+  if (days !== null) {
+    if (days > REPUBLISH_WINDOW_DAYS) return false;
+
+    return days > 0 || (days === 0 && hasExpiry);
+  }
+
+  return hasExpiry && expireAt - now <= REPUBLISH_WINDOW_DAYS * DAY_MS;
 }

@@ -1,9 +1,17 @@
-import { Ban, Check, Eye, Trash2, X } from "lucide-react";
+import { Ban, Check, Eye, RefreshCw, Trash2, X } from "lucide-react";
+
+import { isInRepublishWindow } from "../adminAdsConstants";
 
 const BASE =
   "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-[background-color,color] duration-200 disabled:cursor-not-allowed disabled:opacity-40";
 
-export default function AdminAdRowActions({ ad, onDetails, onAction, disabled }) {
+export default function AdminAdRowActions({
+  ad,
+  onDetails,
+  onAction,
+  disabled,
+  canRepublish = false,
+}) {
   const moderation = String(ad?.moderation?.status ?? "").toLowerCase();
 
   const canApprove = moderation !== "approved";
@@ -61,6 +69,21 @@ export default function AdminAdRowActions({ ad, onDetails, onAction, disabled })
           className={`${BASE} text-orange-600 hover:bg-orange-50`}
         >
           <Ban size={16} />
+        </button>
+      )}
+
+      {/* Only inside the republish window; the server still has the final
+          word and answers a 400 with its reason. */}
+      {canRepublish && isInRepublishWindow(ad) && (
+        <button
+          type="button"
+          onClick={() => onAction("republish", ad)}
+          disabled={disabled}
+          aria-label={`إعادة نشر ${ad.title ?? "الإعلان"}`}
+          title="إعادة نشر"
+          className={`${BASE} text-sky-700 hover:bg-sky-50`}
+        >
+          <RefreshCw size={16} />
         </button>
       )}
 

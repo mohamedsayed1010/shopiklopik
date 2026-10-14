@@ -7,6 +7,7 @@ import {
   ExternalLink,
   Mail,
   Phone,
+  RefreshCw,
   ShieldCheck,
   Trash2,
   User,
@@ -19,6 +20,7 @@ import Image from "../../../../components/ui/Image";
 import ErrorState from "../../../../components/ui/ErrorState";
 import Skeleton from "../../../../components/ui/Skeleton";
 import StatusBadge from "./StatusBadge";
+import { isInRepublishWindow } from "../adminAdsConstants";
 import { formatDateTime, formatPrice } from "../../../../utils/format";
 import { resolveMediaUrl } from "../../../../utils/mediaUrl";
 
@@ -77,7 +79,13 @@ function fieldText(field) {
   return String(value);
 }
 
-export default function AdminAdDetails({ open, onClose, query, onAction }) {
+export default function AdminAdDetails({
+  open,
+  onClose,
+  query,
+  onAction,
+  canRepublish = false,
+}) {
   const [showRaw, setShowRaw] = useState(false);
 
   const ad = query.data?.data;
@@ -120,6 +128,13 @@ export default function AdminAdDetails({ open, onClose, query, onAction }) {
               <Button size="sm" variant="outline" onClick={() => onAction("suspend", ad)}>
                 <Ban size={16} />
                 إيقاف
+              </Button>
+            )}
+
+            {canRepublish && isInRepublishWindow(ad) && (
+              <Button size="sm" variant="outline" onClick={() => onAction("republish", ad)}>
+                <RefreshCw size={16} />
+                إعادة نشر
               </Button>
             )}
 
@@ -267,6 +282,9 @@ export default function AdminAdDetails({ open, onClose, query, onAction }) {
           <Section title="التواريخ" icon={Calendar}>
             <dl>
               <Row label="تاريخ الإنشاء" value={formatDateTime(ad.createdAt)} />
+              {ad.publishedAt && (
+                <Row label="تاريخ النشر" value={formatDateTime(ad.publishedAt)} />
+              )}
               <Row label="تاريخ البدء" value={formatDateTime(ad.startDate)} />
               <Row label="تاريخ الانتهاء" value={formatDateTime(ad.endDate)} />
               <Row label="تاريخ انتهاء الصلاحية" value={formatDateTime(ad.expireAt)} />
@@ -278,6 +296,9 @@ export default function AdminAdDetails({ open, onClose, query, onAction }) {
                     : null
                 }
               />
+              {typeof ad.republishCount === "number" && (
+                <Row label="مرات إعادة النشر" value={String(ad.republishCount)} />
+              )}
             </dl>
           </Section>
 

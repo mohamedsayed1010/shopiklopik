@@ -14,6 +14,7 @@ import useAdminAdsStats from "../../../hooks/admin/useAdminAdsStats";
 import useAdminAdDetails from "../../../hooks/admin/useAdminAdDetails";
 import useAdminAdActions from "../../../hooks/admin/useAdminAdActions";
 import useAdminAdsMetadata from "../../../hooks/admin/useAdminAdsMetadata";
+import useAdminAccess from "../../../hooks/admin/useAdminPermissions";
 import useAdminAdDeepLink from "./useAdminAdDeepLink";
 import AdminAdsStats from "./components/AdminAdsStats";
 import AdminAdsTabs from "./components/AdminAdsTabs";
@@ -117,6 +118,12 @@ function AdminAdsDashboard() {
   }, [closeAction, closeDetails]);
 
   const actions = useAdminAdActions({ onActionSuccess });
+
+  /* The endpoint is guarded by ads → Approve; an account without it is not
+     offered a button the server would only answer with 403. */
+  const { canOnRoute } = useAdminAccess();
+
+  const canRepublish = canOnRoute("/admin/ads", "Approve");
 
   const result = listQuery.data?.data;
 
@@ -233,6 +240,7 @@ function AdminAdsDashboard() {
                 onDetails={openDetails}
                 onAction={openAction}
                 disabled={actions.isPending}
+                canRepublish={canRepublish}
               />
 
               <div className="mt-4">
@@ -260,6 +268,7 @@ function AdminAdsDashboard() {
           clearDeepLink?.();
         }}
         query={detailsQuery}
+        canRepublish={canRepublish}
         onAction={(name, ad) =>
           openAction(name, { typeId: ad.typeId, id: ad.id, title: ad.title })
         }

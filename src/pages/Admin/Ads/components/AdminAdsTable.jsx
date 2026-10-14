@@ -21,6 +21,12 @@ const HEADERS = [
   "إجراءات",
 ];
 
+/* The actions column stays on screen while the wider columns scroll under it.
+   The tight cell padding lets all twelve columns fit a 1280px window; below
+   that they outgrow it, and a row's actions are the one part that must never
+   need a sideways scroll to reach. */
+const PINNED = "sticky end-0 z-[1] border-s border-line";
+
 /** "—" beats an empty cell: it says "nothing here", not "still loading". */
 function Cell({ children }) {
   return <span className="text-[13px] text-ink-soft">{children || "—"}</span>;
@@ -45,7 +51,13 @@ function Thumb({ ad, size = "h-12 w-12" }) {
   );
 }
 
-export default function AdminAdsTable({ ads, onDetails, onAction, disabled }) {
+export default function AdminAdsTable({
+  ads,
+  onDetails,
+  onAction,
+  disabled,
+  canRepublish,
+}) {
   return (
     <>
       {/* ---------- phones and tablets ---------- */}
@@ -127,6 +139,7 @@ export default function AdminAdsTable({ ads, onDetails, onAction, disabled }) {
                 onDetails={onDetails}
                 onAction={onAction}
                 disabled={disabled}
+                canRepublish={canRepublish}
               />
             </div>
           </li>
@@ -138,11 +151,13 @@ export default function AdminAdsTable({ ads, onDetails, onAction, disabled }) {
         <table className="w-full min-w-[1100px] border-collapse text-start">
           <thead>
             <tr className="border-b border-line bg-canvas">
-              {HEADERS.map((header) => (
+              {HEADERS.map((header, index) => (
                 <th
                   key={header}
                   scope="col"
-                  className="whitespace-nowrap px-3 py-3 text-start text-[12px] font-bold uppercase tracking-wide text-muted"
+                  className={`whitespace-nowrap px-2 py-3 text-start text-[12px] font-bold uppercase tracking-wide text-muted ${
+                    index === HEADERS.length - 1 ? `${PINNED} bg-canvas` : ""
+                  }`}
                 >
                   {header}
                 </th>
@@ -154,9 +169,9 @@ export default function AdminAdsTable({ ads, onDetails, onAction, disabled }) {
             {ads.map((ad) => (
               <tr
                 key={`${ad.typeId}-${ad.id}`}
-                className="transition-colors duration-150 hover:bg-canvas"
+                className="group transition-colors duration-150 hover:bg-canvas"
               >
-                <td className="px-3 py-3">
+                <td className="px-2 py-3">
                   <div className="flex min-w-0 items-center gap-3">
                     <Thumb ad={ad} />
 
@@ -172,11 +187,11 @@ export default function AdminAdsTable({ ads, onDetails, onAction, disabled }) {
                   </div>
                 </td>
 
-                <td className="whitespace-nowrap px-3 py-3">
+                <td className="whitespace-nowrap px-2 py-3">
                   <Cell>{ad.type}</Cell>
                 </td>
 
-                <td className="px-3 py-3">
+                <td className="px-2 py-3">
                   <span className="block max-w-[150px] truncate text-[13px] text-ink-soft">
                     {ad.categoryName || "—"}
                   </span>
@@ -185,19 +200,19 @@ export default function AdminAdsTable({ ads, onDetails, onAction, disabled }) {
                   </span>
                 </td>
 
-                <td className="px-3 py-3">
+                <td className="px-2 py-3">
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-500">
                       <User size={14} aria-hidden="true" />
                     </span>
 
                     <span className="min-w-0">
-                      <span className="block max-w-[130px] truncate text-[13px] font-medium text-ink-soft">
+                      <span className="block max-w-[112px] truncate text-[13px] font-medium text-ink-soft">
                         {ad.ownerName || "—"}
                       </span>
                       <span
                         dir="ltr"
-                        className="tnum block max-w-[130px] truncate text-[11.5px] text-muted"
+                        className="tnum block max-w-[112px] truncate text-[11.5px] text-muted"
                       >
                         {ad.ownerPhone || ""}
                       </span>
@@ -205,17 +220,17 @@ export default function AdminAdsTable({ ads, onDetails, onAction, disabled }) {
                   </div>
                 </td>
 
-                <td className="whitespace-nowrap px-3 py-3">
+                <td className="whitespace-nowrap px-2 py-3">
                   <span className="tnum text-[13px] font-bold text-brand-800">
                     {formatPrice(ad.price) ?? "—"}
                   </span>
                 </td>
 
-                <td className="px-3 py-3">
+                <td className="px-2 py-3">
                   <StatusBadge status={ad.status} size="sm" />
                 </td>
 
-                <td className="px-3 py-3">
+                <td className="px-2 py-3">
                   <StatusBadge
                     status={ad.moderation?.status}
                     label={ad.moderation?.statusName}
@@ -223,30 +238,33 @@ export default function AdminAdsTable({ ads, onDetails, onAction, disabled }) {
                   />
                 </td>
 
-                <td className="whitespace-nowrap px-3 py-3">
+                <td className="whitespace-nowrap px-2 py-3">
                   <Cell>{formatDate(ad.createdAt)}</Cell>
                 </td>
 
-                <td className="whitespace-nowrap px-3 py-3">
+                <td className="whitespace-nowrap px-2 py-3">
                   <Cell>{formatDate(ad.startDate)}</Cell>
                 </td>
 
-                <td className="whitespace-nowrap px-3 py-3">
+                <td className="whitespace-nowrap px-2 py-3">
                   <Cell>{formatDate(ad.endDate)}</Cell>
                 </td>
 
-                <td className="whitespace-nowrap px-3 py-3">
+                <td className="whitespace-nowrap px-2 py-3">
                   <span className="tnum text-[13px] text-ink-soft">
                     {remainingLabel(ad.remainingDays) ?? "—"}
                   </span>
                 </td>
 
-                <td className="px-3 py-3">
+                <td
+                  className={`${PINNED} bg-surface px-2 py-3 transition-colors duration-150 group-hover:bg-canvas`}
+                >
                   <AdminAdRowActions
                     ad={ad}
                     onDetails={onDetails}
                     onAction={onAction}
                     disabled={disabled}
+                    canRepublish={canRepublish}
                   />
                 </td>
               </tr>
