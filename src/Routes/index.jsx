@@ -50,6 +50,7 @@ import {
   AdminAuditLogsPage,
   AdminSettingsPage,
   AdminPaymentMethodsPage,
+  AdminCategoriesPage,
   AdminBannersPage,
   AdminReferralsPage,
   AdminReferralDetailsPage,
@@ -157,6 +158,7 @@ const routes = [
     // The methods users may transfer to. Same admin guard as every other
     // /admin route.
     {path: "admin/payment-methods", element: <AdminRoute> <AdminPaymentMethodsPage/> </AdminRoute>},
+    {path: "admin/categories", element: <AdminRoute> <AdminCategoriesPage/> </AdminRoute>},
 
     // Banner centre: advertiser requests, house banners and placement pricing.
     {path: "admin/banners", element: <AdminRoute> <AdminBannersPage/> </AdminRoute>},

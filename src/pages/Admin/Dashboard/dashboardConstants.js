@@ -39,6 +39,7 @@ export function rangeToParams({ from, to }) {
 export const IMPLEMENTED_ADMIN_ROUTES = [
   "/admin",
   "/admin/ads",
+  "/admin/categories",
   "/admin/users",
   "/admin/accounts",
   "/admin/reports",

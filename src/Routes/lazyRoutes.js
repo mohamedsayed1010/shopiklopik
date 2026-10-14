@@ -84,6 +84,9 @@ export const AdminSettingsPage = lazy(() => import("../pages/Admin/Settings"));
 export const AdminPaymentMethodsPage = lazy(
   () => import("../pages/Admin/PaymentMethods")
 );
+export const AdminCategoriesPage = lazy(
+  () => import("../pages/Admin/Categories")
+);
 export const AdminBannersPage = lazy(() => import("../pages/Admin/Banners"));
 export const AdminReferralsPage = lazy(() => import("../pages/Admin/Referrals"));
 export const AdminReferralDetailsPage = lazy(

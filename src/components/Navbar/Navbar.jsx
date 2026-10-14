@@ -25,6 +25,7 @@ import {
   Gift,
   UserCog,
   CircleHelp,
+  Layers,
 } from "lucide-react";
 
 import NotificationBell from "../Notifications/NotificationBell";
@@ -50,6 +51,7 @@ const NAV_LINKS = [
 const ADMIN_LINKS = [
   { to: "/admin", label: "لوحة التحكم", icon: LayoutDashboard },
   { to: "/admin/ads", label: "إدارة الإعلانات", icon: Package },
+  { to: "/admin/categories", label: "الأقسام", icon: Layers },
   { to: "/admin/users", label: "المستخدمين", icon: Users },
   { to: "/admin/accounts", label: "حسابات المسؤولين", icon: UserCog, superAdminOnly: true },
   { to: "/admin/reports", label: "البلاغات", icon: ShieldAlert },
