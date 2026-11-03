@@ -9,6 +9,7 @@ import {
   apiError,
   apiMessage,
 } from "./profileCache";
+import { republishErrorText, republishSuccessText } from "../../utils/republish";
 
 export function useMyListings({ pageIndex = 1, pageSize = 8 } = {}) {
   const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
@@ -56,16 +57,25 @@ export function useListingActions() {
   });
 
   const republishMutation = useMutation({
-    mutationFn: ({ endpoint }) => republishListing(endpoint),
+    mutationFn: ({ listing }) => republishListing(listing),
 
-    onSuccess: (response) => {
-      toast.success(apiMessage(response, "تم إعادة نشر الإعلان"));
+    onSuccess: (response, variables) => {
+      toast.success(republishSuccessText(response, "تمت إعادة نشر الإعلان"));
 
       refreshAll();
+
+      /* The details page caches for 5 minutes and would keep showing the old
+         expiry. Its key is the module's own details endpoint, which the card
+         resolved from read-config (e.g. `/api/lost-found/{id}` for LostItem). */
+      if (variables?.endpoint) {
+        queryClient.invalidateQueries({
+          queryKey: ["dynamic-details", variables.endpoint],
+        });
+      }
     },
 
     onError: (error) => {
-      toast.error(apiError(error, "تعذّر إعادة نشر الإعلان"));
+      toast.error(republishErrorText(error, "owner"));
     },
   });
 

@@ -1,6 +1,6 @@
 import { Ban, Check, Eye, RefreshCw, Trash2, X } from "lucide-react";
 
-import { isInRepublishWindow } from "../adminAdsConstants";
+import { isRepublishEligible } from "../../../../utils/republish";
 
 const BASE =
   "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-[background-color,color] duration-200 disabled:cursor-not-allowed disabled:opacity-40";
@@ -72,9 +72,9 @@ export default function AdminAdRowActions({
         </button>
       )}
 
-      {/* Only inside the republish window; the server still has the final
-          word and answers a 400 with its reason. */}
-      {canRepublish && isInRepublishWindow(ad) && (
+      {/* Only when the server marks the ad eligible (expired or expiring
+          soon); the endpoint still has the final word. */}
+      {canRepublish && isRepublishEligible(ad) && (
         <button
           type="button"
           onClick={() => onAction("republish", ad)}

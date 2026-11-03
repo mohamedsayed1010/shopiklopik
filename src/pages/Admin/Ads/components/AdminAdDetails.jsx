@@ -20,7 +20,7 @@ import Image from "../../../../components/ui/Image";
 import ErrorState from "../../../../components/ui/ErrorState";
 import Skeleton from "../../../../components/ui/Skeleton";
 import StatusBadge from "./StatusBadge";
-import { isInRepublishWindow } from "../adminAdsConstants";
+import { isRepublishEligible } from "../../../../utils/republish";
 import { formatDateTime, formatPrice } from "../../../../utils/format";
 import { resolveMediaUrl } from "../../../../utils/mediaUrl";
 
@@ -131,7 +131,7 @@ export default function AdminAdDetails({
               </Button>
             )}
 
-            {canRepublish && isInRepublishWindow(ad) && (
+            {canRepublish && isRepublishEligible(ad) && (
               <Button size="sm" variant="outline" onClick={() => onAction("republish", ad)}>
                 <RefreshCw size={16} />
                 إعادة نشر

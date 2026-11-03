@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, PackageOpen, Plus } from "lucide-react";
 
@@ -115,6 +115,10 @@ export default function MyListingsSection() {
 
   const { deleteMutation, republishMutation } = useListingActions();
 
+  /* A ref, not `isPending`: a double click lands twice before React
+     re-renders, and both clicks would read `isPending` as false. */
+  const republishLock = useRef(false);
+
   const total = Number(page?.totalCount);
 
   return (
@@ -189,9 +193,23 @@ export default function MyListingsSection() {
                   onDelete={(item, endpoint) =>
                     setPendingDelete({ id: item.id, title: item.title, endpoint })
                   }
-                  onRepublish={(item, endpoint) =>
-                    republishMutation.mutate({ id: item.id, endpoint })
-                  }
+                  onRepublish={(item, endpoint) => {
+                    /* One republish at a time: `variables` only tracks the
+                       latest call, so a second one would clear the first
+                       card's spinner and let it be clicked again. */
+                    if (republishLock.current) return;
+
+                    republishLock.current = true;
+
+                    republishMutation.mutate(
+                      { id: item.id, listing: item, endpoint },
+                      {
+                        onSettled: () => {
+                          republishLock.current = false;
+                        },
+                      }
+                    );
+                  }}
                 />
               );
             })}

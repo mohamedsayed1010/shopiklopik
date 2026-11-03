@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AlertCircle, Ban, CheckCircle2, XCircle } from "lucide-react";
 
 import Modal from "../../../../components/ui/Modal";
@@ -77,6 +77,10 @@ function ActionDialogs({
   const [reason, setReason] = useState("");
 
   const [touched, setTouched] = useState(false);
+
+  /* `loading` disables the confirm button only after a re-render, so a double
+     click would send two republish requests without this lock. */
+  const republishLock = useRef(false);
 
   const selectedReason = useMemo(
     () => rejectionReasons.find((option) => String(option.id) === String(reason)),
@@ -292,7 +296,18 @@ function ActionDialogs({
         }"، ويحدّد النظام تاريخ انتهاء صلاحيته الجديد.`}
         confirmLabel="إعادة النشر"
         loading={republishMutation.isPending}
-        onConfirm={() => republishMutation.mutate(target, { onSuccess: close })}
+        onConfirm={() => {
+          if (republishLock.current) return;
+
+          republishLock.current = true;
+
+          republishMutation.mutate(target, {
+            onSuccess: close,
+            onSettled: () => {
+              republishLock.current = false;
+            },
+          });
+        }}
         onClose={republishMutation.isPending ? undefined : close}
       />
 

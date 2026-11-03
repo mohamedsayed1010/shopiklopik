@@ -14,6 +14,10 @@ import Button from "../../../components/ui/Button";
 import { describeStatus } from "../listingStatus";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
 import { listingEndpoint } from "../../../utils/listingEndpoint";
+import {
+  isRepublishEligible,
+  ownerRepublishRequest,
+} from "../../../utils/republish";
 import { formatDate, formatPrice } from "../../../utils/format";
 
 /** Arabic counts a day four different ways — "3 يوم" reads as broken copy. */
@@ -74,6 +78,12 @@ export default function MyListingCard({
   const canUpdate = listing.canUpdate !== false;
 
   const canDelete = listing.canDelete !== false;
+
+  /* Every listing type, whenever the backend says it is due (`canRepublish`).
+     The only other condition is having what the request needs: an id and the
+     module's typeId. */
+  const canRepublish =
+    isRepublishEligible(listing) && ownerRepublishRequest(listing) !== null;
 
   const remaining =
     listing.remainingDays === null || listing.remainingDays === undefined
@@ -177,7 +187,7 @@ export default function MyListingCard({
           )}
         </div>
 
-        {(detailsPath || endpoint || listing.canRepublish) && (
+        {(detailsPath || endpoint || canRepublish) && (
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {detailsPath && (
               <Button as={Link} to={detailsPath} size="sm" variant="outline">
@@ -201,7 +211,7 @@ export default function MyListingCard({
               </Button>
             )}
 
-            {listing.canRepublish && endpoint && (
+            {canRepublish && (
               <Button
                 size="sm"
                 variant="gold"
