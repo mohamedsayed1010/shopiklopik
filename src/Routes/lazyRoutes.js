@@ -88,6 +88,7 @@ export const AdminCategoriesPage = lazy(
   () => import("../pages/Admin/Categories")
 );
 export const AdminBannersPage = lazy(() => import("../pages/Admin/Banners"));
+export const AdminPaymentsPage = lazy(() => import("../pages/Admin/Payments"));
 export const AdminReferralsPage = lazy(() => import("../pages/Admin/Referrals"));
 export const AdminReferralDetailsPage = lazy(
   () => import("../pages/Admin/Referrals/Details")

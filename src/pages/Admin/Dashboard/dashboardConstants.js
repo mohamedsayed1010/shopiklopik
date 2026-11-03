@@ -47,6 +47,7 @@ export const IMPLEMENTED_ADMIN_ROUTES = [
   "/admin/audit-logs",
   "/admin/settings",
   "/admin/payment-methods",
+  "/admin/payments",
   "/admin/banners",
   "/admin/banner-requests",
 ];

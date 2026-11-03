@@ -52,6 +52,7 @@ import {
   AdminPaymentMethodsPage,
   AdminCategoriesPage,
   AdminBannersPage,
+  AdminPaymentsPage,
   AdminReferralsPage,
   AdminReferralDetailsPage,
 } from "./lazyRoutes";
@@ -159,6 +160,11 @@ const routes = [
     // /admin route.
     {path: "admin/payment-methods", element: <AdminRoute> <AdminPaymentMethodsPage/> </AdminRoute>},
     {path: "admin/categories", element: <AdminRoute> <AdminCategoriesPage/> </AdminRoute>},
+    // Ad payments: submissions, history and settings. The backend's `payments`
+    // permission page declares `/payments`, so the screen lives at
+    // /admin/payments; /admin/payments/{id} opens that submission's details.
+    {path: "admin/payments", element: <AdminRoute> <AdminPaymentsPage/> </AdminRoute>},
+    {path: "admin/payments/:id", element: <AdminRoute> <AdminPaymentsPage/> </AdminRoute>},
 
     // Banner centre: advertiser requests, house banners and placement pricing.
     {path: "admin/banners", element: <AdminRoute> <AdminBannersPage/> </AdminRoute>},
