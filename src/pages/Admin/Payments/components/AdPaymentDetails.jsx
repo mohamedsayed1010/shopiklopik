@@ -52,9 +52,10 @@ function DetailsSkeleton() {
 const withId = (name, id) =>
   name && id !== null && id !== undefined && id !== "" ? `${name} (#${id})` : name || (id ?? null);
 
-/* Every field `GET /submissions/{id}` returns. Review is offered only with
-   payments → Approve, only while the record shows no decision yet, and only
-   once the decision values are verified. `readOnly` (history) never offers it. */
+/* Every field `GET /submissions/{id}` returns. Review is offered with
+   payments → View (what the review endpoint requires), only while the record
+   shows no decision yet, and only while decision values are configured.
+   `readOnly` (history) never offers it. */
 export default function AdPaymentDetails({ query, canApprove, readOnly = false, onReview, onOverlayChange }) {
   if (query.isLoading) return <DetailsSkeleton />;
 

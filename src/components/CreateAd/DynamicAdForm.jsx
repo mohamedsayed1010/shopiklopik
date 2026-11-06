@@ -1,10 +1,17 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import Seo from "../Seo";
 
 import { ensureSubmissionIdentity } from "../../utils/dynamicForm";
 import { joinFieldErrors } from "../../utils/apiErrors";
 import { reportApiError } from "../../utils/reportApiError";
+import {
+  adPaymentPagePath,
+  createdAdvertisementId,
+  paymentErrorText,
+  paymentTarget,
+} from "../../utils/adPaymentForm";
 import ErrorSummary from "../ui/ErrorSummary";
 import useCreateAdForm from "./useCreateAdForm";
 import {
@@ -14,6 +21,9 @@ import {
 import useDynamicForm from "./useDynamicForm";
 import useCreateAdSubmit from "./useCreateAdSubmit";
 import DynamicFormSections from "./DynamicFormSections";
+import AdPaymentSection from "../payments/AdPaymentSection";
+import useAdPaymentForm from "../payments/useAdPaymentForm";
+import { useSubmitAdPayment } from "../../hooks/useAdPayment";
 import PageHeader from "../ui/PageHeader";
 import Steps from "../ui/Steps";
 import Button from "../ui/Button";
@@ -80,9 +90,37 @@ export default function DynamicAdForm() {
     buildFormData,
   } = useDynamicForm(fields, submitContext);
 
+  /* Ad payment: a second form from the Lookup's `payment` block, shown only
+     when this module is subject to payment and payments are switched on. It is
+     submitted separately, after the advertisement exists. */
+  const paymentForm = useAdPaymentForm(formData);
+
+  const submitPayment = useSubmitAdPayment();
+
+  /* The advertisement this page already created, when its payment has not gone
+     through yet. While it is set, a retry sends the payment only — the
+     advertisement is never created a second time. Tied to the form it was
+     created from, so another category starts clean. */
+  const [created, setCreated] = useState(null);
+
+  const formIdentity = `${formData?.category?.id ?? ""}/${formData?.subCategory?.id ?? ""}`;
+
+  const createdId = created?.form === formIdentity ? created.id : null;
+
+  // Like `created`, a payment error belongs to the form it was raised on.
+  const [paymentFailure, setPaymentFailure] = useState(null);
+
+  const paymentError = paymentFailure?.form === formIdentity ? paymentFailure.message : null;
+
+  const setPaymentError = (message) =>
+    setPaymentFailure(message ? { message, form: formIdentity } : null);
+
   const formRef = useRef(null);
 
   const summaryRef = useRef(null);
+
+  // Refuses a second create while the first is still on its way.
+  const creating = useRef(false);
 
   /* What the server said about the last attempt, split into what belongs on a
      field and what belongs to the submission as a whole. Kept apart from the
@@ -121,23 +159,101 @@ export default function DynamicAdForm() {
     [handleChange]
   );
 
+  const paymentRequired = paymentForm.isRequired;
+
   const createAdMutation = useCreateAdSubmit({
-    onSuccess: () => {
-      navigate("/");
-    },
+    // With a payment step, the confirmation comes after the payment instead.
+    successToast: !paymentRequired,
+    onSuccess: () => {},
   });
 
-  const handleSubmit = (event) => {
+  const scrollTo = (selector) =>
+    requestAnimationFrame(() => {
+      formRef.current
+        ?.querySelector(selector)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
+  /* Sends the payment proof for an advertisement this page created. On failure
+     the advertisement stays created and remembered, and the payment values stay
+     in the form, so the user can correct and retry the payment alone. */
+  const sendPayment = async (advertisementId) => {
+    const target = paymentTarget(formData, advertisementId);
+
+    if (!target) {
+      setPaymentError("تعذّر تجهيز طلب الدفع لهذا الإعلان. افتح صفحة الدفع من إعلاناتك وأكمل الدفع.");
+
+      return;
+    }
+
+    setPaymentError(null);
+
+    try {
+      await submitPayment.submit({
+        target,
+        formData: paymentForm.buildFormData(),
+        advertisementType: paymentForm.payment?.advertisementType,
+        advertisementId,
+      });
+
+      toast.success("تم إرسال إعلانك وإثبات الدفع، وهما الآن قيد المراجعة.", { duration: 6000 });
+
+      setCreated(null);
+
+      const path = adPaymentPagePath({
+        categoryId: formData.category?.id,
+        subCategoryId: formData.subCategory?.id,
+        advertisementId,
+      });
+
+      navigate(path ?? "/");
+    } catch (failure) {
+      if (failure?.duplicate) return;
+
+      setPaymentError(paymentErrorText(failure));
+
+      scrollTo('[data-field="ad-payment"]');
+    }
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
+    if (creating.current || submitPayment.isSubmitting) return;
+
+    // A form that is subject to payment never submits around an unknown config.
+    if (paymentForm.gate === "loading" || paymentForm.gate === "error") {
+      scrollTo('[data-field="ad-payment"]');
+
+      return;
+    }
+
+    // The advertisement exists already: only the payment is (re)sent.
+    if (createdId) {
+      if (!paymentForm.validate()) {
+        scrollTo(`[data-field="${Object.keys(paymentForm.errors)[0]}"]`);
+
+        return;
+      }
+
+      await sendPayment(createdId);
+
+      return;
+    }
+
     /* Validation is config-driven, so a conditionally required field that has
-       just appeared blocks submission exactly as the backend would. */
-    if (!validate()) {
-      const [firstInvalid] = Object.keys(errors);
+       just appeared blocks submission exactly as the backend would. Both forms
+       are checked before anything is sent. */
+    const adValid = validate();
 
-      const node = formRef.current?.querySelector(`[data-field="${firstInvalid}"]`);
+    const paymentValid = paymentRequired ? paymentForm.validate() : true;
 
-      node?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (!adValid || !paymentValid) {
+      const [firstInvalid] = !adValid
+        ? Object.keys(errors)
+        : Object.keys(paymentForm.errors);
+
+      scrollTo(`[data-field="${firstInvalid}"]`);
 
       return;
     }
@@ -147,47 +263,84 @@ export default function DynamicAdForm() {
     // Last attempt is no longer what is being asked about.
     setServerErrors({ fieldErrors: {}, globalErrors: [] });
 
-    createAdMutation.mutate(
-      {
+    setPaymentError(null);
+
+    creating.current = true;
+
+    let response;
+
+    try {
+      response = await createAdMutation.mutateAsync({
         endpoint: formData.submit.endpoint,
         method: formData.submit.method,
         formData: data,
-      },
-      {
-        /* Attached per call rather than to the hook so the field set the
-           messages are matched against is the one that was on screen when
-           this submission left. */
-        onError: (error) => {
-          const { fieldErrors, globalErrors } = reportApiError(error, {
-            fields: renderedFields,
-            fallback: "تعذّر نشر الإعلان، حاول مرة أخرى",
-            // Shown in the summary below instead — never in both places.
-            toastGlobal: false,
-          });
+      });
+    } catch (failure) {
+      const { fieldErrors, globalErrors } = reportApiError(failure, {
+        fields: renderedFields,
+        fallback: "تعذّر نشر الإعلان، حاول مرة أخرى",
+        // Shown in the summary below instead — never in both places.
+        toastGlobal: false,
+      });
 
-          setServerErrors({
-            fieldErrors: joinFieldErrors(fieldErrors),
-            globalErrors,
-          });
+      setServerErrors({
+        fieldErrors: joinFieldErrors(fieldErrors),
+        globalErrors,
+      });
 
-          const [firstField] = Object.keys(fieldErrors);
+      const [firstField] = Object.keys(fieldErrors);
 
-          /* Take the reader to the finding: the summary when the server said
-             something no field owns, otherwise the first field it named. */
-          requestAnimationFrame(() => {
-            const target =
-              globalErrors.length > 0
-                ? summaryRef.current
-                : formRef.current?.querySelector(
-                    `[data-field="${firstField}"]`
-                  );
+      /* Take the reader to the finding: the summary when the server said
+         something no field owns, otherwise the first field it named. */
+      requestAnimationFrame(() => {
+        const target =
+          globalErrors.length > 0
+            ? summaryRef.current
+            : formRef.current?.querySelector(`[data-field="${firstField}"]`);
 
-            target?.scrollIntoView({ behavior: "smooth", block: "center" });
-          });
-        },
-      }
-    );
+        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+
+      return;
+    } finally {
+      creating.current = false;
+    }
+
+    if (!paymentRequired) {
+      navigate("/");
+
+      return;
+    }
+
+    const advertisementId = createdAdvertisementId(response);
+
+    if (!advertisementId) {
+      // Created, but the response did not say which id: never create it again.
+      toast("تم إنشاء إعلانك. أكمل الدفع من صفحة إعلاناتك.", { duration: 8000 });
+
+      navigate("/profile");
+
+      return;
+    }
+
+    setCreated({ id: advertisementId, form: formIdentity });
+
+    await sendPayment(advertisementId);
   };
+
+  const busy = createAdMutation.isPending || submitPayment.isSubmitting;
+
+  const paymentBlocked = paymentForm.gate === "loading" || paymentForm.gate === "error";
+
+  const submitLabel = busy
+    ? submitPayment.isSubmitting
+      ? submitPayment.progress
+        ? `جارٍ إرسال الدفع... ${submitPayment.progress}%`
+        : "جارٍ إرسال الدفع..."
+      : "جارٍ النشر..."
+    : createdId
+      ? "إعادة إرسال الدفع"
+      : "نشر الإعلان";
 
   return (
     <>
@@ -231,18 +384,44 @@ export default function DynamicAdForm() {
               />
             </div>
 
-            <DynamicFormSections
-              sections={sections}
-              values={values}
-              /* The server has the last word on a field it named: it judged
-                 the request that was actually sent, while the client rule only
-                 judged the shape of it. */
-              errors={{ ...visibleErrors, ...serverErrors.fieldErrors }}
-              lookups={formData.lookups}
-              requiredFor={requiredFor}
-              onChange={handleFieldChange}
-              onBlur={handleBlur}
-            />
+            {createdId && (
+              <p
+                role="status"
+                className="mb-6 rounded-xl bg-gold-50 px-4 py-3 text-[13px] leading-6 text-ink-soft ring-1 ring-inset ring-gold-200"
+              >
+                تم إنشاء إعلانك ولم يكتمل الدفع بعد. بيانات الإعلان محفوظة ولن تُرسل مرة أخرى؛
+                راجع بيانات الدفع ثم اضغط «إعادة إرسال الدفع».
+              </p>
+            )}
+
+            {/* Locked once created: the advertisement exists, only its payment is pending. */}
+            <fieldset disabled={Boolean(createdId) || busy} className="min-w-0">
+              <DynamicFormSections
+                sections={sections}
+                values={values}
+                /* The server has the last word on a field it named: it judged
+                   the request that was actually sent, while the client rule only
+                   judged the shape of it. */
+                errors={{ ...visibleErrors, ...serverErrors.fieldErrors }}
+                lookups={formData.lookups}
+                requiredFor={requiredFor}
+                onChange={handleFieldChange}
+                onBlur={handleBlur}
+              />
+            </fieldset>
+
+            <div className="mt-6 space-y-3">
+              <AdPaymentSection
+                paymentForm={paymentForm}
+                errors={paymentForm.visibleErrors}
+                disabled={busy}
+              />
+
+              <ErrorSummary
+                messages={paymentError ? [paymentError] : []}
+                title="لم يكتمل إرسال الدفع"
+              />
+            </div>
 
             {/* Submit — sticky rather than fixed, so it stays in flow: it pins
                 while the form scrolls and settles below the last section
@@ -250,13 +429,13 @@ export default function DynamicAdForm() {
                 height includes the safe-area inset. */}
             <div className=" mt-6 border-t border-line bg-canvas/95 py-4 backdrop-blur-sm max-lg:bottom-[calc(4rem+env(safe-area-inset-bottom))]">
               <div className="flex flex-row-reverse gap-3">
-                
+
                 <Button
                   type="button"
                   variant="outline"
                   size="lg"
                   onClick={() => navigate(-1)}
-                  disabled={createAdMutation.isPending}
+                  disabled={busy}
                   className="w-28 shrink-0 sm:w-40"
                 >
                   تراجع
@@ -265,10 +444,11 @@ export default function DynamicAdForm() {
                   type="submit"
                   variant="gold"
                   size="lg"
-                  loading={createAdMutation.isPending}
+                  loading={busy}
+                  disabled={paymentBlocked}
                   className="min-w-0 flex-1"
                 >
-                  {createAdMutation.isPending ? "جارٍ النشر..." : "نشر الإعلان"}
+                  {submitLabel}
                 </Button>
 
               </div>

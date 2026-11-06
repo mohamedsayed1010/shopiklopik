@@ -197,7 +197,11 @@ export default function AdminPaymentsPage() {
 
   const canEdit = canOnRoute(ROUTE, "Edit");
 
-  const canApprove = canOnRoute(ROUTE, "Approve");
+  /* PATCH .../review is authorised by `payments → View` (Swagger's
+     x-admin-authorization, checked by the server on every request) — not by an
+     Approve grant. Gating it on Approve hid review from admins the backend lets
+     review. The server stays authoritative: a 403 is shown as such. */
+  const canApprove = canView;
 
   const {
     values,

@@ -62,9 +62,9 @@ export default function PaymentMethodInfo({
               <dd className="flex min-w-0 items-center gap-1">
                 <span
                   dir={row.ltr ? "ltr" : undefined}
-                  className={`truncate text-[13.5px] font-semibold text-ink ${
-                    row.ltr ? "tnum" : ""
-                  }`}
+                  className={`${
+                    row.wrap ? "whitespace-pre-line break-words text-start" : "truncate"
+                  } text-[13.5px] font-semibold text-ink ${row.ltr ? "tnum" : ""}`}
                 >
                   {row.value}
                 </span>

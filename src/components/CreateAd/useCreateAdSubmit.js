@@ -44,6 +44,10 @@ export default function useCreateAdSubmit({
 
   onError,
 
+  /* Off when a payment step follows: "sent for review" would be premature
+     while the payment proof has not been sent yet. */
+  successToast = true,
+
 } = {}) {
 
 
@@ -58,7 +62,7 @@ export default function useCreateAdSubmit({
     onSuccess:(data)=>{
 
 
-      toast.success(
+      if (successToast) toast.success(
         "تم إرسال إعلانك بنجاح، وهو الآن قيد المراجعة من الإدارة قبل النشر.",
         { duration: 6000 }
       );

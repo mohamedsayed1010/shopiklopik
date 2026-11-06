@@ -36,6 +36,7 @@ import {
   MyPaymentsPage,
   NewPaymentPage,
   PaymentDetailsPage,
+  AdPaymentPage,
   BannerBookingPage,
   MyBannerBookingsPage,
   BannerBookingDetailsPage,
@@ -101,6 +102,11 @@ const routes = [
     {path: "payments", element: <ProtectedRoute> <MyPaymentsPage/> </ProtectedRoute>},
     {path: "payments/new", element: <ProtectedRoute> <NewPaymentPage/> </ProtectedRoute>},
     {path: "payments/:id", element: <ProtectedRoute> <PaymentDetailsPage/> </ProtectedRoute>},
+
+    // One advertisement's ad payment (/api/v2/ads/{type}/{id}/payment): its
+    // status, and the submit / resubmit form when the server allows it. The
+    // category pair resolves the advertisement type through the Lookup.
+    {path: "my-ads/:categoryId/:subCategoryId/:id/payment", element: <ProtectedRoute> <AdPaymentPage/> </ProtectedRoute>},
 
     // The notification preference and the followed sections. Reached from the
     // notifications drawer and from the main menu.

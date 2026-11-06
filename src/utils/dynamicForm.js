@@ -329,7 +329,14 @@ export function validateFields(fields = [], values = {}, satisfied = null) {
       }
     }
 
-    if (FILE_TYPES.includes(field.type) && Array.isArray(value)) {
+    /* A single-file field holds the File itself, a multiple one an array.
+       Both get the same count, size and extension checks. */
+    const files =
+      typeof File !== "undefined" && value instanceof File ? [value] : value;
+
+    if (FILE_TYPES.includes(field.type) && Array.isArray(files)) {
+      const value = files;
+
       if (field.maxFiles && value.length > field.maxFiles) {
         errors[field.name] = `أقصى عدد للملفات ${field.maxFiles}`;
 

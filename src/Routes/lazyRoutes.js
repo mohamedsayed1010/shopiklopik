@@ -58,6 +58,7 @@ export const NewPaymentPage = lazy(() => import("../pages/Payments/NewPayment"))
 export const PaymentDetailsPage = lazy(
   () => import("../pages/Payments/PaymentDetails")
 );
+export const AdPaymentPage = lazy(() => import("../pages/AdPayment"));
 export const BannerBookingPage = lazy(() => import("../pages/BannerBooking"));
 export const MyBannerBookingsPage = lazy(
   () => import("../pages/MyBannerBookings")

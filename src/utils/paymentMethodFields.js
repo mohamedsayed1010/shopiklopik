@@ -51,17 +51,26 @@ export function paymentDestinationRows(method) {
     });
   }
 
-  if (present(method.instaPayId)) {
+  /* Two shapes reach here: `/api/payments/methods` nests the bank details and
+     names the InstaPay field `instaPayId`; the ad payment config
+     (`AdPaymentMethodDto`) is flat and says `instaPayIdentifier`. */
+  const instaPay = present(method.instaPayId) ? method.instaPayId : method.instaPayIdentifier;
+
+  if (present(instaPay)) {
     rows.push({
       key: "instaPayId",
       label: "معرّف إنستا باي",
-      value: method.instaPayId,
+      value: instaPay,
       ltr: true,
       copyable: true,
     });
   }
 
-  const bank = method.bank;
+  const bank =
+    method.bank ??
+    (["bankName", "accountHolderName", "accountNumber", "iban"].some((key) => present(method[key]))
+      ? method
+      : null);
 
   if (bank) {
     if (present(bank.bankName)) {
@@ -95,6 +104,11 @@ export function paymentDestinationRows(method) {
         copyable: true,
       });
     }
+  }
+
+  // Free-form transfer details some methods carry (ad payment config only).
+  if (present(method.paymentInfo)) {
+    rows.push({ key: "paymentInfo", label: "بيانات التحويل", value: method.paymentInfo, copyable: true, wrap: true });
   }
 
   return rows;

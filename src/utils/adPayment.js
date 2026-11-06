@@ -13,6 +13,9 @@ import { apiErrorText } from "./apiErrors";
      only when a caller sets a real boolean; no UI control offers it.
    - Settings answer `paymentMethodIds: []` together with
      `usesAllActiveMethods: true`, so an empty list means "all active methods".
+     Re-read on 2026-11-06 (same answer, all three active methods returned).
+     That is how the server REPORTS "all"; that a PUT with [] is READ the same
+     way is inferred, not verified (no settings write was made).
    - A missing submission is a JSON 404 ("عملية الدفع غير موجودة."), on the
      screenshot endpoint too. A malformed id is a route-level 404. */
 
@@ -231,8 +234,11 @@ export function isSettingsDirty(form, initial) {
 /* Review                                                              */
 /* ------------------------------------------------------------------ */
 
-/* The review `decision` values, confirmed by the backend team on 2026-11-03
-   (Swagger types the field as a plain string and lists none). Case-sensitive.
+/* The review `decision` values, reported as confirmed by the backend team on
+   2026-11-03. NOT verifiable from the contract: Swagger (re-checked
+   2026-11-06) types `decision` as a plain nullable string and lists no values,
+   and no review was sent to verify them. Re-confirm with the backend before
+   relying on them. Case-sensitive.
    `rejectionReason` is free text the admin writes, not an enum. If either
    value is ever cleared, the review UI goes back to a notice and sends nothing. */
 export const REVIEW_DECISION_VALUES = Object.freeze({

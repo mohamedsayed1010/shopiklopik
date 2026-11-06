@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import {
   CalendarCheck,
   CalendarPlus,
+  CreditCard,
   Eye,
   Hourglass,
   Pencil,
@@ -19,6 +20,7 @@ import {
   ownerRepublishRequest,
 } from "../../../utils/republish";
 import { formatDate, formatPrice } from "../../../utils/format";
+import { adPaymentPagePath } from "../../../utils/adPaymentForm";
 
 /** Arabic counts a day four different ways — "3 يوم" reads as broken copy. */
 function formatDays(count) {
@@ -67,6 +69,12 @@ export default function MyListingCard({
     categoryId && subCategoryId && listing.id
       ? `/dynamic/${categoryId}/${subCategoryId}/${listing.id}`
       : null;
+
+  const paymentPath = adPaymentPagePath({
+    categoryId,
+    subCategoryId,
+    advertisementId: listing.id,
+  });
 
   const endpoint = listingEndpoint({
     detailsEndpoint:
@@ -208,6 +216,17 @@ export default function MyListingCard({
               >
                 <Pencil size={15} />
                 تعديل
+              </Button>
+            )}
+
+            {/* The ad payment of this listing: its status, and the form to send
+                or resend the proof when the server allows it. Whether the
+                module needs payment at all is decided on that page, from the
+                Lookup, so nothing here assumes a list of types. */}
+            {paymentPath && (
+              <Button as={Link} to={paymentPath} size="sm" variant="outline">
+                <CreditCard size={15} />
+                حالة الدفع
               </Button>
             )}
 
