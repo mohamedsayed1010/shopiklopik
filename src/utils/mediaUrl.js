@@ -35,6 +35,23 @@ export function resolveMediaUrl(value) {
   return url.href;
 }
 
+/* The API-relative path of a resolved URL that the API itself serves under
+   /api/ (a protected file such as a payment receipt, which needs the Bearer
+   token), or null for anything else (uploads, external links, blob:/data:). */
+export function protectedApiPath(resolved) {
+  if (typeof resolved !== "string" || !resolved) return null;
+
+  try {
+    const url = new URL(resolved);
+
+    return url.origin === API_ORIGIN && url.pathname.startsWith("/api/")
+      ? `${url.pathname}${url.search}`
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export { API_ORIGIN };
 
 export default resolveMediaUrl;

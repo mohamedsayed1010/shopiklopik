@@ -59,3 +59,38 @@ export async function getPaymentDetails(id) {
 
   return response.data;
 }
+
+/* The receipt of one of the user's own payments. `screenshotUrl` points at
+   `/api/payments/{id}/screenshot`, which answers 401 without the Bearer token,
+   so it can never be an <img src>: it is fetched here, through the
+   authenticated instance (token + refresh), as a Blob. A JSON error body that
+   arrived as a Blob is decoded back into `error.response.data`; a 200 that is
+   not an image is a failure too. */
+export async function getPaymentScreenshot(url) {
+  let response;
+
+  try {
+    response = await axiosInstance.get(url, { responseType: "blob" });
+  } catch (error) {
+    const body = error?.response?.data;
+
+    if (body && typeof body.text === "function") {
+      try {
+        error.response.data = JSON.parse(await body.text());
+      } catch {
+        error.response.data = null;
+      }
+    }
+
+    throw error;
+  }
+
+  const blob = response.data;
+
+  if (blob && blob.size > 0 && /^image\//i.test(blob.type ?? "")) return blob;
+
+  throw Object.assign(new Error("payment screenshot: the response was not an image"), {
+    notAnImage: true,
+    response: { status: response.status, data: null },
+  });
+}

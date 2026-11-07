@@ -7,6 +7,7 @@ import {
   getMyPayments,
   getPaymentDetails,
   getPaymentMethods,
+  getPaymentScreenshot,
 } from "../api/payments/payments";
 import { apiError, apiMessage } from "../pages/Profile/profileCache";
 
@@ -71,6 +72,23 @@ export function usePaymentDetails({ id }) {
     staleTime: 1000 * 15,
     gcTime: 1000 * 60 * 5,
     retry: paymentRetry,
+  });
+}
+
+export const paymentScreenshotKey = (path) => [...MY_PAYMENTS_ROOT, "screenshot", String(path ?? "")];
+
+/* A receipt as a Blob, loaded with the user's token. `path` is the
+   API-relative screenshot path, or null for a receipt that needs no token.
+   Not kept once nothing shows it (gcTime 0): it is a private document. */
+export function usePaymentScreenshot(path) {
+  return useQuery({
+    queryKey: paymentScreenshotKey(path),
+    queryFn: () => getPaymentScreenshot(path),
+    enabled: Boolean(path),
+    staleTime: 1000 * 60 * 5,
+    gcTime: 0,
+    retry: (failureCount, error) => (error?.notAnImage ? false : paymentRetry(failureCount, error)),
+    refetchOnWindowFocus: false,
   });
 }
 
