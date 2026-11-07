@@ -13,6 +13,7 @@ import useAdPaymentForm from "../../components/payments/useAdPaymentForm";
 import useCreateAdForm from "../../components/CreateAd/useCreateAdForm";
 import { useAdPaymentStatus, useSubmitAdPayment } from "../../hooks/useAdPayment";
 import { paymentErrorText, paymentTarget } from "../../utils/adPaymentForm";
+import { reviewFeedbackOf } from "../../utils/adPayment";
 
 /* Tones for the stages Swagger documents for GET .../payment (NotRequired,
    AwaitingPayment, PaymentUnderReview, PaymentRejected, Paid). The text shown
@@ -207,7 +208,7 @@ export default function AdPaymentPage() {
                 ]}
               />
 
-              {(status.rejectionReason || status.reviewFeedback) && (
+              {(status.rejectionReason || reviewFeedbackOf(status)) && (
                 <div className="space-y-2 rounded-xl bg-red-50 px-4 py-3 text-[13px] leading-6 text-red-800 ring-1 ring-inset ring-red-200">
                   {status.rejectionReason && (
                     <p>
@@ -215,10 +216,10 @@ export default function AdPaymentPage() {
                       <span className="whitespace-pre-line">{status.rejectionReason}</span>
                     </p>
                   )}
-                  {status.reviewFeedback && (
+                  {reviewFeedbackOf(status) && (
                     <p>
                       <span className="font-semibold">ملاحظات المراجعة: </span>
-                      <span className="whitespace-pre-line">{status.reviewFeedback}</span>
+                      <span className="whitespace-pre-line">{reviewFeedbackOf(status)}</span>
                     </p>
                   )}
                 </div>

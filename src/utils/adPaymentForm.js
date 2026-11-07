@@ -79,12 +79,15 @@ export function paymentFieldsOf(formData) {
   return [...fields].sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0));
 }
 
-/* Lookup payment fields this app deliberately leaves out, by product decision
-   (2026-11-06): never rendered, never validated, never sent. Only optional
-   fields may go here — the backend accepts the payment without them. */
+/* Lookup payment fields this app leaves out while they are OPTIONAL, by
+   product decision (2026-11-06): never rendered, never validated, never sent.
+   The moment the Lookup marks one required, it is shown and sent like any
+   other field, so the form can never be blocked by a field it hides. */
 export const EXCLUDED_PAYMENT_FIELDS = Object.freeze(["TransactionReference"]);
 
-const isExcluded = (field) => EXCLUDED_PAYMENT_FIELDS.includes(field?.name);
+const isRequiredField = (field) => field?.required === true || field?.isRequired === true;
+
+const isExcluded = (field) => EXCLUDED_PAYMENT_FIELDS.includes(field?.name) && !isRequiredField(field);
 
 /** The fields the user fills in: everything the Lookup marks as visible, minus the excluded ones. */
 export function userPaymentFields(fields = []) {

@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "node --experimental-test-module-mocks --import ./scripts/test-register.mjs --test \"src/**/__tests__/*.test.js\"",
     "preview": "vite preview",
     "seo:generate": "node scripts/generate-seo-files.mjs",
     "seo:prerender": "node scripts/prerender.mjs",

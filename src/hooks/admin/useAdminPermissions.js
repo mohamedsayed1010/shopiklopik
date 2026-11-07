@@ -96,7 +96,7 @@ export function useMyAdminPermissions({ enabled = true } = {}) {
     [query.data]
   );
 
-  return { query, ...permissions };
+  return { query, subject, ...permissions };
 }
 
 export default function useAdminAccess() {
@@ -104,6 +104,7 @@ export default function useAdminAccess() {
 
   const {
     query: meQuery,
+    subject,
     resolved,
     isSuperAdmin,
     admin,
@@ -181,5 +182,7 @@ export default function useAdminAccess() {
     canOnRoute,
     isLoading,
     meQuery,
+    /** The signed-in account's id (token `sub` / nameidentifier), or null. */
+    subject,
   };
 }

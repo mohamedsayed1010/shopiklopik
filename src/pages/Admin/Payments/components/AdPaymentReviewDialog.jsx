@@ -6,7 +6,9 @@ import Button from "../../../../components/ui/Button";
 import { errorClass, inputClass, labelClass } from "../../../../components/ui/formStyles";
 import { useReviewAdPaymentSubmission } from "../../../../hooks/admin/useAdminAdPayment";
 import {
+  adPaymentErrorCopy,
   rejectionReasonError,
+  reviewFeedbackOf,
   toReviewPayload,
 } from "../../../../utils/adPayment";
 import { formatMoney } from "../../../../utils/format";
@@ -48,6 +50,13 @@ function Outcome({ result }) {
             <dd className="text-ink">{payment.rejectionReason}</dd>
           </div>
         )}
+
+        {reviewFeedbackOf(payment) && (
+          <div className="flex flex-wrap justify-between gap-2">
+            <dt className="text-muted">ملاحظات المراجعة</dt>
+            <dd className="whitespace-pre-line text-ink">{reviewFeedbackOf(payment)}</dd>
+          </div>
+        )}
       </dl>
 
       <p className="text-[12.5px] leading-6 text-muted">
@@ -63,6 +72,8 @@ function Outcome({ result }) {
    verified decision values; otherwise this dialog is never offered. */
 export default function AdPaymentReviewDialog({ action, submission, onClose }) {
   const [reason, setReason] = useState("");
+
+  const [feedback, setFeedback] = useState("");
 
   const [touched, setTouched] = useState(false);
 
@@ -80,6 +91,9 @@ export default function AdPaymentReviewDialog({ action, submission, onClose }) {
 
   const pending = review.isPending;
 
+  /* The server's refusal stays on screen (a toast alone is gone in seconds). */
+  const failure = review.isError ? adPaymentErrorCopy(review.error, { subject: "مراجعة المدفوعات" }) : null;
+
   const close = () => {
     if (pending) return;
 
@@ -91,7 +105,7 @@ export default function AdPaymentReviewDialog({ action, submission, onClose }) {
 
     if (lock.current || reasonError) return;
 
-    const body = toReviewPayload({ action, rejectionReason: reason });
+    const body = toReviewPayload({ action, rejectionReason: reason, feedback });
 
     if (!body) return;
 
@@ -193,6 +207,28 @@ export default function AdPaymentReviewDialog({ action, submission, onClose }) {
               )}
             </div>
           )}
+
+          {failure && (
+            <p role="alert" className="rounded-xl bg-red-50 px-3.5 py-3 text-[13px] leading-6 text-red-800 ring-1 ring-inset ring-red-200">
+              <span className="font-semibold">{failure.title}{failure.status ? ` (${failure.status})` : ""}: </span>
+              {failure.description}
+            </p>
+          )}
+
+          <div>
+            <label htmlFor="ad-payment-review-feedback" className={labelClass}>
+              ملاحظات لصاحب الإعلان <span className="font-normal text-muted">(اختياري)</span>
+            </label>
+
+            <textarea
+              id="ad-payment-review-feedback"
+              rows={3}
+              value={feedback}
+              onChange={(event) => setFeedback(event.target.value)}
+              disabled={pending}
+              className={`${inputClass({ sized: false })} py-3`}
+            />
+          </div>
         </div>
       )}
     </Modal>

@@ -179,7 +179,7 @@ function PaymentsList({ kind, queryFilters, enabled, blockedReason, hasActiveFil
 }
 
 export default function AdminPaymentsPage() {
-  const { canOnRoute, isSuperAdmin, resolved, pages, isAdmin } = useAdminAccess();
+  const { canOnRoute, isSuperAdmin, resolved, pages, isAdmin, subject } = useAdminAccess();
 
   /* `canOnRoute` answers "yes" for a page the catalogue does not list yet, so
      until the catalogue has been read (or failed), only a visible grant counts.
@@ -434,6 +434,7 @@ export default function AdminPaymentsPage() {
           <AdPaymentDetails
             query={detailsQuery}
             canApprove={canApprove}
+            adminId={subject}
             readOnly={selected.source === "history"}
             onReview={(action, submission) => setReview({ action, submission })}
             onOverlayChange={setOverlayOpen}

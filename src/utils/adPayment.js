@@ -234,11 +234,10 @@ export function isSettingsDirty(form, initial) {
 /* Review                                                              */
 /* ------------------------------------------------------------------ */
 
-/* The review `decision` values, reported as confirmed by the backend team on
-   2026-11-03. NOT verifiable from the contract: Swagger (re-checked
-   2026-11-06) types `decision` as a plain nullable string and lists no values,
-   and no review was sent to verify them. Re-confirm with the backend before
-   relying on them. Case-sensitive.
+/* The review `decision` values, confirmed by the backend team on 2026-11-03
+   and by the server's own validator on 2026-11-07: against an unknown
+   submission id, "Approve" and "Reject" pass validation (404 "عملية الدفع غير
+   موجودة.") while any other text is a 400 "القرار لازم يكون موافقة أو رفض.".
    `rejectionReason` is free text the admin writes, not an enum. If either
    value is ever cleared, the review UI goes back to a notice and sends nothing. */
 export const REVIEW_DECISION_VALUES = Object.freeze({
@@ -263,18 +262,31 @@ export function isAwaitingReview(submission) {
   );
 }
 
+/* The backend refuses a review by the account that paid (403 "مينفعش تراجع
+   عملية دفع إنت اللي دافعها.", seen live 2026-11-07), so review is not offered
+   on one's own submission. Unknown ids on either side never block: the server
+   stays the authority. */
+export function isOwnSubmission(submission, adminId) {
+  const owner = submission?.ownerId;
+
+  return isFilled(owner) && isFilled(adminId) && owner.trim().toLowerCase() === adminId.trim().toLowerCase();
+}
+
 export function rejectionReasonError(reason) {
   return isFilled(reason) ? null : "اكتب سبب الرفض ليظهر لصاحب الإعلان.";
 }
 
-/* The PATCH body, or null when it cannot be sent.
-   - Approve: `{ decision: "Approve", rejectionReason: "" }`. No reason is asked
-     for, and anything typed earlier is never carried over.
-   - Reject: `{ decision: "Reject", rejectionReason: <the admin's text> }`, sent
-     exactly as typed (any language, any punctuation). Only text with no visible
-     character at all is refused, since that is no reason. */
+/* The PATCH body, or null when it cannot be sent. The documented body is
+   `{ decision, rejectionReason, feedback }`; all three are always present.
+   - Approve: `{ decision: "Approve", rejectionReason: "", feedback }`. No reason
+     is asked for, and anything typed earlier is never carried over.
+   - Reject: `{ decision: "Reject", rejectionReason: <the admin's text>, feedback }`,
+     the reason sent exactly as typed (any language, any punctuation). Only text
+     with no visible character at all is refused, since that is no reason.
+   - `feedback` is optional on both: the admin's note to the owner, trimmed, or
+     "" when none was written. */
 export function toReviewPayload(
-  { action, rejectionReason } = {},
+  { action, rejectionReason, feedback } = {},
   values = REVIEW_DECISION_VALUES
 ) {
   if (action !== "approve" && action !== "reject") return null;
@@ -283,13 +295,22 @@ export function toReviewPayload(
 
   if (!isFilled(decision)) return null;
 
+  const note = typeof feedback === "string" ? feedback.trim() : "";
+
   if (action === "reject") {
     const reason = typeof rejectionReason === "string" ? rejectionReason : "";
 
-    return isFilled(reason) ? { decision, rejectionReason: reason } : null;
+    return isFilled(reason) ? { decision, rejectionReason: reason, feedback: note } : null;
   }
 
-  return { decision, rejectionReason: "" };
+  return { decision, rejectionReason: "", feedback: note };
+}
+
+/** The reviewer's note on a record, whichever name the endpoint uses for it. */
+export function reviewFeedbackOf(record) {
+  const value = record?.feedback ?? record?.reviewFeedback;
+
+  return isFilled(value) ? value.trim() : null;
 }
 
 /** The review answer: the payment plus the listing outcome the server reports. */
@@ -342,8 +363,12 @@ export function adPaymentErrorCopy(error, { subject = "البيانات" } = {})
       return { status, title: "طلب غير صالح", description: server || "راجع القيم المدخلة ثم أعد المحاولة." };
     case 401:
       return { status, title: "انتهت صلاحية جلستك", description: "سجّل الدخول مرة أخرى للمتابعة." };
+    /* The server's words first: a 403 is not always a missing grant. Review
+       answers 403 "مينفعش تراجع عملية دفع إنت اللي دافعها." to an admin
+       reviewing their own payment, and a fixed "no permission" text sent
+       SuperAdmins looking for a permission problem that did not exist. */
     case 403:
-      return { status, title: "لا تملك الصلاحية", description: `لا تملك صلاحية الوصول إلى ${subject}.` };
+      return { status, title: "لا تملك الصلاحية", description: server || `لا تملك صلاحية الوصول إلى ${subject}.` };
     case 404:
       return { status, title: "غير موجود", description: server && !/الرابط المطلوب/.test(server) ? server : "لم يعد هذا العنصر موجودًا أو لم يعد متاحًا." };
     case 409:
@@ -369,7 +394,7 @@ export function adPaymentErrorCopy(error, { subject = "البيانات" } = {})
 export function adPaymentErrorText(error, options) {
   const copy = adPaymentErrorCopy(error, options);
 
-  return copy.status === 401 || copy.status === 403 || copy.status === 429 || copy.status >= 500 || copy.status === null
+  return copy.status === 401 || copy.status === 429 || copy.status >= 500 || copy.status === null
     ? copy.description
     : `${copy.title}: ${copy.description}`;
 }

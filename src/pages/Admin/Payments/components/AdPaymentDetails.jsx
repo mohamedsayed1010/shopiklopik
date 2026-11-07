@@ -8,7 +8,9 @@ import AdPaymentScreenshot from "./AdPaymentScreenshot";
 import {
   adPaymentErrorCopy,
   isAwaitingReview,
+  isOwnSubmission,
   isReviewContractKnown,
+  reviewFeedbackOf,
 } from "../../../../utils/adPayment";
 import { formatDateTime, formatMoney } from "../../../../utils/format";
 
@@ -56,7 +58,7 @@ const withId = (name, id) =>
    payments → View (what the review endpoint requires), only while the record
    shows no decision yet, and only while decision values are configured.
    `readOnly` (history) never offers it. */
-export default function AdPaymentDetails({ query, canApprove, readOnly = false, onReview, onOverlayChange }) {
+export default function AdPaymentDetails({ query, canApprove, adminId, readOnly = false, onReview, onOverlayChange }) {
   if (query.isLoading) return <DetailsSkeleton />;
 
   if (query.isError) {
@@ -85,6 +87,9 @@ export default function AdPaymentDetails({ query, canApprove, readOnly = false, 
 
   const reviewable = !readOnly && canApprove && isAwaitingReview(item);
 
+  /* The server refuses a review by the admin who paid (403). */
+  const ownPayment = isOwnSubmission(item, adminId);
+
   const contractKnown = isReviewContractKnown();
 
   return (
@@ -102,7 +107,12 @@ export default function AdPaymentDetails({ query, canApprove, readOnly = false, 
 
       {reviewable && (
         <div className="rounded-2xl border border-line bg-canvas p-4">
-          {contractKnown ? (
+          {ownPayment ? (
+            <p role="note" className="flex items-start gap-2 text-[13px] leading-6 text-ink-soft">
+              <Info size={16} className="mt-1 shrink-0 text-brand-500" aria-hidden="true" />
+              هذا الدفع مُرسل من حسابك، ولا يمكن مراجعة دفعة أرسلتها بنفسك. يجب أن يراجعها مسؤول آخر لديه صلاحية المدفوعات.
+            </p>
+          ) : contractKnown ? (
             <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={() => onReview?.("approve", item)}>
                 <CheckCircle2 size={16} />
@@ -146,6 +156,7 @@ export default function AdPaymentDetails({ query, canApprove, readOnly = false, 
         <Row label="المراجِع" value={item.reviewedByName} />
         <Row label="معرّف المراجِع" value={item.reviewedBy} ltr mono />
         <Row label="سبب الرفض" value={item.rejectionReason} />
+        <Row label="ملاحظات المراجعة" value={reviewFeedbackOf(item)} />
       </Section>
 
       <Section title="الإعلان">
