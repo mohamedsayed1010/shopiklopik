@@ -13,9 +13,17 @@ export async function resolve(specifier, context, nextResolve) {
     for (const suffix of CANDIDATES) {
       const url = new URL(specifier + suffix, context.parentURL);
 
-      if (existsSync(fileURLToPath(url))) return nextResolve(url.href, context);
+      if (existsSync(fileURLToPath(url))) return asModule(await nextResolve(url.href, context));
     }
   }
 
-  return nextResolve(specifier, context);
+  return asModule(await nextResolve(specifier, context));
+}
+
+/* Node has no format for `.jsx`, and refuses it before a `mock.module()` stub
+   can stand in — so a test could never stub a context or component file. Named
+   an ES module here, a stubbed `.jsx` loads; an unstubbed one still fails, now
+   on its JSX syntax, exactly as it could never load before. */
+function asModule(result) {
+  return result?.url?.endsWith(".jsx") ? { ...result, format: "module" } : result;
 }

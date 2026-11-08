@@ -13,6 +13,10 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import { useNotificationActions } from "./useNotifications";
+import {
+  listingTitleOf,
+  messageWithoutListingTitle,
+} from "../../api/notifications/notificationTypes";
 import { formatRelativeTime, parseApiDate } from "../../utils/format";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
 
@@ -147,6 +151,10 @@ function NotificationItem({ notification, to, onNavigate, variant = "user" }) {
 
   const timestamp = parseApiDate(notification.createdAt);
 
+  const listingTitle = listingTitleOf(notification);
+
+  const message = messageWithoutListingTitle(notification, listingTitle);
+
   const adminGlyph =
     variant === "admin" ? <AdminGlyph notification={notification} /> : null;
 
@@ -215,8 +223,21 @@ function NotificationItem({ notification, to, onNavigate, variant = "user" }) {
           )}
         </div>
 
+        {/* Which listing, on its own line: the message is clamped to two lines
+            and the server puts the title at its very end, so four "تم إرسال
+            الإعلان" rows used to look identical. */}
+        {listingTitle && (
+          <p
+            dir="auto"
+            className="mt-1 truncate text-[13px] font-semibold leading-6 text-ink"
+            title={listingTitle}
+          >
+            {listingTitle}
+          </p>
+        )}
+
         <p className="mt-1 line-clamp-2 text-[13px] leading-6 text-ink-soft">
-          {notification.message}
+          {message}
         </p>
 
         {/* The exact instant lives in the tooltip and in `datetime`; the label

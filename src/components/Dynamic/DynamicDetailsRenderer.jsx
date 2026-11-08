@@ -30,6 +30,9 @@ import { buildAdModel } from "../../utils/adModel";
 import { collectionOf, fillEndpoint } from "../../utils/listingEndpoint";
 import { interactionCapabilities } from "../../api/interactions/postInteractions";
 import { AuthContext } from "../../context/AuthContext";
+import { resolveListingOwnership } from "../../utils/listingOwnership";
+import { canOfferReport } from "../../utils/listingModeration";
+import ModerationNotice from "./Details/ModerationNotice";
 
 export default function DynamicDetailsRenderer({
   data,
@@ -39,7 +42,19 @@ export default function DynamicDetailsRenderer({
   views = null,
   /** The address this payload was read from — see the details page. */
   endpoint = "",
+  /** `useListingOwnerStatus` — absent means "not known to be the owner". */
+  ownerStatus = null,
 }) {
+  const askInteractions = ownerStatus?.askInteractions ?? true;
+
+  const offerFavorite = ownerStatus?.offerFavorite ?? true;
+
+  const offerShare = ownerStatus?.offerShare ?? true;
+
+  const pendingStatusName =
+    ownerStatus?.isOwnerByRecord && ownerStatus?.moderation?.isPending
+      ? ownerStatus.moderation.name
+      : null;
   /* A comment notification links here as `?focus=comments`, so arriving from
      one lands on the post *and* opens the thread — the notification said
      someone replied, and the reply should be on screen. */
@@ -73,13 +88,16 @@ export default function DynamicDetailsRenderer({
      one cached query shared by all three. */
   const { type: moduleType } = useListingModuleType(categoryId, subCategoryId);
 
-  /* Only used to decide whether a comment is this reader's own, which is what
-     gates the delete affordance where the collection supports one. */
+  /* Decides whether a comment is this reader's own (the delete affordance), and
+     — only when the server gave no `isOwner` — whether the listing is. */
   const { user } = useContext(AuthContext);
 
+  /* Not asked for the owner's pending listing — the backend answers it 404 —
+     and not until the owner's status is known. See `listingModeration`. */
   const { actions, isLoading: isLoadingActions } = useAdvertisementActions({
     id: data?.id,
     type: moduleType,
+    enabled: askInteractions,
   });
 
   const interactions = useMemo(
@@ -91,10 +109,21 @@ export default function DynamicDetailsRenderer({
 
   const supportsLikes = supportsComments && "likesCount" in (data ?? {});
 
+  /* The server's `isOwner` when it answered; for a listing under review, where
+     `/actions` answers 404 even to its owner, the owner id the details record
+     publishes against the signed-in account. Display only — every owner action
+     is authorised by the server on its own request. */
+  const { isOwner } = resolveListingOwnership({
+    actions,
+    record: data,
+    userId: user?.id,
+  });
+
   const hasReported = actions?.hasReported === true;
 
-  const canOpenReport =
-    !hasReported && (actions ? actions.canReport !== false : true);
+  /* Never on one's own listing; otherwise the server's `canReport` decides, as
+     before. See `canOfferReport`. */
+  const canOpenReport = canOfferReport({ isOwner, hasReported, actions });
 
   const detailsTemplate = config?.details?.endpoint ?? "";
 
@@ -115,6 +144,7 @@ export default function DynamicDetailsRenderer({
   } = useSimilarAdvertisements({
     id: data?.id,
     type: moduleType,
+    enabled: askInteractions,
     /* The same (category, sub-category) the type above was resolved from, so
        the hook can settle it itself while the metadata query is still in
        flight. It is one shared cached query either way. */
@@ -147,6 +177,8 @@ export default function DynamicDetailsRenderer({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start lg:gap-8">
         {/* Main column */}
         <div className="stagger space-y-5 lg:col-span-8">
+          {pendingStatusName && <ModerationNotice statusName={pendingStatusName} />}
+
           <AdGallery
             images={model.images}
             videos={model.videos}
@@ -181,6 +213,8 @@ export default function DynamicDetailsRenderer({
             }
             isLoadingFavorite={isLoadingActions}
             canFavorite={actions ? actions.canFavorite !== false : true}
+            showFavorite={offerFavorite}
+            showShare={offerShare}
             moduleType={moduleType}
             categoryId={categoryId}
             subCategoryId={subCategoryId}
@@ -197,8 +231,9 @@ export default function DynamicDetailsRenderer({
             <ReturnedStatus
               post={data}
               detailsEndpoint={recordEndpoint}
-              /* The server's answer to "is this mine?", never a local guess. */
-              isOwner={actions?.isOwner === true}
+              /* The server's answer to "is this mine?" whenever it gave one;
+                 see `resolveListingOwnership`. */
+              isOwner={isOwner}
             />
           )}
 
@@ -264,6 +299,7 @@ export default function DynamicDetailsRenderer({
         adId={data.id}
         type={moduleType}
         adTitle={model.title}
+        isOwner={isOwner}
       />
 
       {/* Mounted on first open and kept mounted, so the exit animation has

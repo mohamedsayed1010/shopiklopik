@@ -33,7 +33,11 @@ export default function Profile() {
     [byType]
   );
 
-  const { resolve } = useListingRoutes(typeNames);
+  /* Labels and links for the per-type breakdown only — no config is needed,
+     so none is fetched. Cars ("Advertisement", published without a category
+     pair) get an unlinked card instead of a read-config request for every
+     category in the catalogue. */
+  const { resolve } = useListingRoutes(typeNames, { fetchConfigs: "none" });
 
   return (
     <>

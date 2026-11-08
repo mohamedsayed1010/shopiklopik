@@ -1,4 +1,5 @@
 import axiosInstance from "../axiosInstance";
+import { myPaymentsParams } from "../../utils/paymentFilters";
 
 const BASE = "/api/payments";
 
@@ -42,11 +43,9 @@ export async function createPayment(
 }
 
 export async function getMyPayments({ status } = {}) {
-  const params = {};
-
-  if (status !== undefined && status !== null && status !== "") {
-    params.status = Number(status);
-  }
+  /* Same reading as the query key (`myPaymentsKey`), so two calls that share a
+     cache entry always send the same request. */
+  const params = myPaymentsParams(status);
 
   const response = await axiosInstance.get(`${BASE}/my`, { params });
 

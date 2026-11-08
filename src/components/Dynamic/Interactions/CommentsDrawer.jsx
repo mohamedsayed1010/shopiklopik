@@ -14,7 +14,9 @@ import {
 
 import usePostComments from "../../../hooks/usePostComments";
 import Button from "../../ui/Button";
+import CharacterCounter from "../../ui/CharacterCounter";
 import Spinner from "../../ui/Spinner";
+import { COMMENT_MAX_LENGTH, validateComment } from "../../../utils/interactionLimits";
 import ConfirmDialog from "../../ui/ConfirmDialog";
 import { formatNumber, formatRelativeTime } from "../../../utils/format";
 import { apiErrorMessages } from "../../../utils/apiErrors";
@@ -72,9 +74,13 @@ function CommentRow({
 
   const isEditing = draft !== null;
 
-  const trimmed = (draft ?? "").trim();
+  /* Same rule as a new comment — see `validateComment`. */
+  const { value: trimmed, error: editError } = validateComment(draft ?? "");
 
   const submitEdit = async () => {
+    /* Too long: kept open with the reason shown, nothing sent. */
+    if (trimmed && editError) return;
+
     /* Nothing to save, and an empty comment is not an edit — the create form
        refuses one too. */
     if (!trimmed || trimmed === comment.comment) {
@@ -140,14 +146,24 @@ function CommentRow({
               rows={3}
               disabled={isUpdating}
               aria-label="نص التعليق"
+              maxLength={COMMENT_MAX_LENGTH}
+              aria-invalid={Boolean(trimmed && editError) || undefined}
               className="w-full resize-y rounded-xl border border-line-strong bg-surface px-3 py-2 text-[13.5px] leading-6 text-ink outline-none focus:border-brand-400 disabled:opacity-60"
             />
 
+            {trimmed && editError && (
+              <p role="alert" className="mt-1 text-xs font-medium text-red-600">
+                {editError}
+              </p>
+            )}
+
             <div className="mt-2 flex items-center gap-2">
+              <CharacterCounter text={draft} max={COMMENT_MAX_LENGTH} className="me-auto" />
+
               <button
                 type="button"
                 onClick={submitEdit}
-                disabled={isUpdating || !trimmed}
+                disabled={isUpdating || !trimmed || Boolean(editError)}
                 className="cursor-pointer rounded-lg bg-brand-900 px-3 py-1.5 text-[12.5px] font-bold text-white transition-colors duration-200 hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 حفظ
@@ -253,10 +269,10 @@ export default function CommentsDrawer({
     async (event) => {
       event.preventDefault();
 
-      const value = draft.trim();
+      const { value, error } = validateComment(draft);
 
-      if (!value) {
-        setFormError("اكتب تعليقًا قبل الإرسال.");
+      if (error) {
+        setFormError(error);
         inputRef.current?.focus();
         return;
       }
@@ -478,6 +494,8 @@ export default function CommentsDrawer({
                   }}
                   placeholder="اكتب تعليقًا..."
                   aria-label="اكتب تعليقًا"
+                  aria-describedby="comment-length"
+                  maxLength={COMMENT_MAX_LENGTH}
                   aria-invalid={Boolean(formError) || undefined}
                   disabled={isSubmitting}
                   className={`max-h-32 min-h-11 w-full resize-y rounded-2xl border bg-surface px-4 py-2.5 text-[14px] leading-6 text-ink outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-muted/70 disabled:cursor-not-allowed disabled:bg-canvas ${
@@ -491,7 +509,7 @@ export default function CommentsDrawer({
                   type="submit"
                   variant="primary"
                   loading={isSubmitting}
-                  disabled={!draft.trim()}
+                  disabled={Boolean(validateComment(draft).error)}
                   aria-label="إرسال التعليق"
                   /* Only additive classes: the project has no tailwind-merge,
                      so overriding Button's own padding or radius here would
@@ -505,11 +523,17 @@ export default function CommentsDrawer({
                 </Button>
               </div>
 
-              {formError && (
-                <p role="alert" className="mt-2 text-xs font-medium text-red-600">
-                  {formError}
-                </p>
-              )}
+              <div className="mt-2 flex items-start justify-between gap-3">
+                {formError ? (
+                  <p role="alert" className="text-xs font-medium text-red-600">
+                    {formError}
+                  </p>
+                ) : (
+                  <span />
+                )}
+
+                <CharacterCounter id="comment-length" text={draft} max={COMMENT_MAX_LENGTH} className="shrink-0" />
+              </div>
             </form>
           </motion.section>
 

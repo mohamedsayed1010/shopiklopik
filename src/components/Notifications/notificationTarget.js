@@ -128,6 +128,14 @@ export function readNotification(notification) {
 
   const normalized = toKebab(hint);
 
+  /* The whole non-id path of the deep link — "lost-found/lost" for a lost
+     item. Some modules publish a multi-segment route in the metadata, and only
+     the full path names them; the first segment alone ("lost-found") is shared
+     by two modules (lost and found). */
+  const routeHint = (link?.segments ?? [])
+    .filter((segment) => !UUID.test(segment))
+    .join("/");
+
   return {
     kind: "listing",
     id,
@@ -138,11 +146,27 @@ export function readNotification(notification) {
     pair: listingPair(notification),
     // Candidate keys, cheapest and most certain first. `useNotificationTargets`
     // walks these against the read-configs the app has already fetched.
+    /* The one hint worth *fetching* for: the most specific name the
+       notification carries. `useListingRoutes` sweeps every read-config when a
+       hint it is given cannot be placed, so it is handed this alone — the rest
+       below are only looked up, never fetched for. */
+    primaryHint:
+      (routeHint.includes("/") ? routeHint : null) ||
+      link?.resource ||
+      referenceType ||
+      notification?.entityName ||
+      null,
     moduleHints: [
-      MODULE_ALIASES[normalized.replace(/-/g, "")] ?? null,
-      hint,
-      normalized,
-    ].filter(Boolean),
+      ...new Set(
+        [
+          routeHint.includes("/") ? routeHint : null,
+          MODULE_ALIASES[normalized.replace(/-/g, "")] ?? null,
+          hint,
+          normalized,
+          referenceType || null,
+        ].filter(Boolean)
+      ),
+    ],
     endpointHints: [
       link?.pathname ?? null,
       normalized ? `/api/${normalized}` : null,

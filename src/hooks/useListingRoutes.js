@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 
 import { getCategoriesTree } from "../api/categories/categories";
@@ -81,7 +81,17 @@ function indexConfigs(results) {
   return { byModule, byEndpoint, byIds };
 }
 
-export default function useListingRoutes(types = []) {
+/* `fetchConfigs` — which read-configs this caller lets the hook request:
+     "all"      (default) name-guess candidates for every key, and a sweep of
+                every pair for keys nothing else can place. For callers that
+                use the `config` a resolution carries (My Listings' fallback).
+     "unplaced" only for keys the metadata cannot place (cars, published 0:0).
+                For callers that need a pair, not a config (notifications).
+     "none"     never. Names and pairs come from the metadata and the tree
+                alone (the profile's per-type breakdown: one card that cannot
+                be placed is shown unlinked rather than costing a read-config
+                request for every category — 19 in production). */
+export default function useListingRoutes(types = [], { fetchConfigs = "all" } = {}) {
   const wanted = useMemo(() => {
     const seen = new Set();
 
@@ -106,7 +116,11 @@ export default function useListingRoutes(types = []) {
 
   /* The same cached query `useListingModuleType` reads — asking for it here
      costs nothing beyond what the app already fetches once per session. */
-  const { data: metadataResponse } = useQuery({
+  const {
+    data: metadataResponse,
+    isSuccess: isMetadataSuccess,
+    isError: isMetadataError,
+  } = useQuery({
     queryKey: ["listing-interaction-metadata"],
     queryFn: getListingInteractionMetadata,
     staleTime: 1000 * 60 * 60,
@@ -124,6 +138,27 @@ export default function useListingRoutes(types = []) {
 
     (metadataResponse?.data?.modules ?? []).forEach((module) => {
       const key = normalizeModule(module?.name);
+
+      const categoryId = Number(module?.categoryId);
+
+      const subCategoryId = Number(module?.subCategoryId);
+
+      if (!key || !categoryId || !subCategoryId) return;
+
+      if (!index.has(key)) index.set(key, { categoryId, subCategoryId });
+    });
+
+    return index;
+  }, [metadataResponse]);
+
+  /* Same pairs, keyed by the module's published route ("furniture",
+     "lost-found/lost"). A notification's deep link names its module this way,
+     and for lost & found it is the only name that tells lost from found. */
+  const byMetadataRoute = useMemo(() => {
+    const index = new Map();
+
+    (metadataResponse?.data?.modules ?? []).forEach((module) => {
+      const key = normalizeModule(module?.route);
 
       const categoryId = Number(module?.categoryId);
 
@@ -205,17 +240,33 @@ export default function useListingRoutes(types = []) {
   }, [pairs]);
 
   /* Pairs worth reading first: one per type we have a name-based guess for. */
+  const metadataSettled = isMetadataSuccess || isMetadataError;
+
+  /* Placed by the backend's own metadata — no read-config needed for a pair. */
+  const isPlacedByMetadata = useCallback(
+    (key) => byMetadataName.has(key) || byMetadataRoute.has(key),
+    [byMetadataName, byMetadataRoute]
+  );
+
   const candidateIds = useMemo(() => {
     const ids = new Set();
 
+    if (fetchConfigs === "none") return ids;
+
+    /* "unplaced" waits for the metadata, then asks only for what it could not
+       place — asking earlier would read configs the metadata makes needless. */
+    if (fetchConfigs === "unplaced" && !metadataSettled) return ids;
+
     wanted.forEach((key) => {
+      if (fetchConfigs === "unplaced" && isPlacedByMetadata(key)) return;
+
       const guess = guesses.get(key);
 
       if (guess) ids.add(`${guess.categoryId}:${guess.subCategoryId}`);
     });
 
     return ids;
-  }, [wanted, guesses]);
+  }, [wanted, guesses, fetchConfigs, metadataSettled, isPlacedByMetadata]);
 
   const candidateResults = useQueries({
     queries: pairs
@@ -241,13 +292,16 @@ export default function useListingRoutes(types = []) {
     (result) => result.isSuccess || result.isError
   );
 
+  /* The sweep is the last resort, so it waits for the cheap answer: until the
+     metadata has settled its maps are empty and every key would look
+     unplaceable, firing a read-config request per category for nothing. */
   const needsSweep =
+    fetchConfigs !== "none" &&
     wanted.length > 0 &&
     pairs.length > 0 &&
     settled &&
-    wanted.some(
-      (key) => !byMetadataName.has(key) && !confirmed.byModule.has(key)
-    );
+    metadataSettled &&
+    wanted.some((key) => !isPlacedByMetadata(key) && !confirmed.byModule.has(key));
 
   const sweepResults = useQueries({
     queries: pairs.map((pair) => ({
@@ -274,7 +328,7 @@ export default function useListingRoutes(types = []) {
       /* The backend's own answer, first. The config is attached when one has
          already been read for that pair, so callers that want the module's
          endpoint still get it without forcing a request. */
-      const fromMetadata = byMetadataName.get(key);
+      const fromMetadata = byMetadataName.get(key) ?? byMetadataRoute.get(key);
 
       if (fromMetadata) {
         const ids = `${fromMetadata.categoryId}:${fromMetadata.subCategoryId}`;
@@ -316,7 +370,15 @@ export default function useListingRoutes(types = []) {
           }
         : null;
     };
-  }, [byMetadataName, namesWithoutPair, pairsByIds, confirmed, swept, guesses]);
+  }, [
+    byMetadataName,
+    byMetadataRoute,
+    namesWithoutPair,
+    pairsByIds,
+    confirmed,
+    swept,
+    guesses,
+  ]);
 
   const resolveByEndpoint = useMemo(() => {
     return (endpoint) => {

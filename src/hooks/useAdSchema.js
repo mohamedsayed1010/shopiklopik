@@ -60,5 +60,7 @@ export default function useAdSchema(categoryId, subCategoryId, config) {
     };
   }, [data, config]);
 
-  return { schema, isLoading, isError };
+  /* `form` is the raw create-ad-form — the details page reads its `payment`
+     block (the owner-only status endpoint) from it. */
+  return { schema, form: data?.data ?? null, isLoading, isError };
 }

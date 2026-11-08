@@ -34,6 +34,11 @@ import {
 } from "../../utils/dynamicForm";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
 import { fillEndpoint } from "../../utils/listingEndpoint";
+import {
+  newImageFiles,
+  photosAfterSave,
+  separateImageEndpoints,
+} from "../../utils/listingImages";
 import { joinFieldErrors } from "../../utils/apiErrors";
 import { reportApiError } from "../../utils/reportApiError";
 
@@ -164,9 +169,16 @@ export default function EditListingPage() {
     endpoint: submitContext?.endpoint,
   });
 
+  /* Cars: the photo operations are their own endpoints — see
+     `utils/listingImages`. Their current photos are shown and managed exactly
+     like the photos of a module that takes `RemoveImageIds`. */
+  const separateImages = separateImageEndpoints(submitContext?.endpoint);
+
+  const canManageImages = canRemoveImages || Boolean(separateImages);
+
   const existingImages = useMemo(
-    () => (canRemoveImages ? removableImagesOf(item) : []),
-    [canRemoveImages, item]
+    () => (canManageImages ? removableImagesOf(item) : []),
+    [canManageImages, item]
   );
 
   const [removedImageIds, setRemovedImageIds] = useState(() => new Set());
@@ -262,10 +274,47 @@ export default function EditListingPage() {
       return;
     }
 
+    const newFiles = newImageFiles(fields, values);
+
+    /* A required photo field may not be emptied by removals: the existing
+       photos are what satisfied it, so taking them all away (and adding none)
+       would save a listing the create form could never have produced. */
+    const requiredPhotoField = fields.find(
+      (field) => field?.type === "image" && (field.required || field.isRequired)
+    );
+
+    if (
+      requiredPhotoField &&
+      existingImages.length > 0 &&
+      photosAfterSave({ existingImages, removedIds: removedImageIds, newFiles }) === 0
+    ) {
+      setServerErrors({
+        fieldErrors: { [requiredPhotoField.name]: "لازم يفضل صورة واحدة على الأقل للإعلان." },
+        globalErrors: [],
+      });
+
+      formRef.current
+        ?.querySelector(`[data-field="${requiredPhotoField.name}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      return;
+    }
+
     setServerErrors({ fieldErrors: {}, globalErrors: [] });
 
     updateMutation.mutate(
-      { endpoint, body: buildBody() },
+      {
+        endpoint,
+        body: buildBody(),
+        images: separateImages
+          ? {
+              listingId: id,
+              endpoints: separateImages,
+              newFiles,
+              removedIds: [...removedImageIds],
+            }
+          : undefined,
+      },
       {
         onError: (error) => {
           const { fieldErrors, globalErrors } = reportApiError(error, {

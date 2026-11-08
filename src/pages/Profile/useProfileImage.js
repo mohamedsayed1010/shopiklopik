@@ -1,4 +1,7 @@
+import { useContext } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+import { AuthContext } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 
 import { uploadProfileImage } from "../../api/profile/uploadProfileImage";
@@ -38,6 +41,8 @@ export function validateImageFile(file) {
 export default function useProfileImage({ onUploaded } = {}) {
   const queryClient = useQueryClient();
 
+  const { patchUser } = useContext(AuthContext) ?? {};
+
   const uploadMutation = useMutation({
     mutationFn: uploadProfileImage,
 
@@ -45,7 +50,10 @@ export default function useProfileImage({ onUploaded } = {}) {
       toast.success(apiMessage(response, "تم تحديث صورتك الشخصية"));
 
       mergeProfileCache(queryClient, response?.data);
-      mergeStoredUser(response?.data);
+
+      // Session and storage together — see `useUpdateProfile`.
+      if (patchUser) patchUser(response?.data);
+      else mergeStoredUser(response?.data);
 
       queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
 

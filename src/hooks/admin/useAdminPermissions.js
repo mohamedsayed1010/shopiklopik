@@ -9,6 +9,12 @@ import { adminRetry } from "./useAdminAuditLogs";
 import { AuthContext } from "../../context/AuthContext";
 import { decodeToken } from "../../utils/adminIdentity";
 import {
+  adminDenialMarker,
+  isAdminAccessDenied,
+  isKnownAdminDenial,
+  readAdminPermissions,
+} from "../../utils/adminDenial";
+import {
   groupPages,
   hasPagePermission,
   normalizeMyPermissions,
@@ -78,15 +84,29 @@ export function useMyAdminPermissions({ enabled = true } = {}) {
 
   const subject = useMemo(() => subjectOf(token), [token]);
 
+  /* This exact session's token. A regular account's 403 is remembered against
+     it, so neither a reload nor a focus asks again — see `utils/adminDenial`.
+     Read on every render: it is one storage lookup, and it must notice a
+     refusal written by the query below. */
+  const marker = useMemo(() => adminDenialMarker(token), [token]);
+
+  const knownDenied = isKnownAdminDenial(marker);
+
   const query = useQuery({
     queryKey: myAdminPermissionsKey(subject),
-    queryFn: getMyAdminPermissions,
-    enabled: enabled && Boolean(token),
+    queryFn: () => readAdminPermissions(getMyAdminPermissions, marker),
+
+    /* Not asked at all when the server already refused this session. Without
+       data the grants normalise to `resolved: false` — no admin access, the
+       same as the refusal itself. */
+    enabled: enabled && Boolean(token) && !knownDenied,
 
     /* An account's own grants are **not** tracked live, by decision: a
        promotion or a permission change takes effect on that account's next
-       sign-in. Nothing polls this and nothing pushes to it. */
-    staleTime: 1000 * 60 * 5,
+       sign-in. Nothing polls this and nothing pushes to it. A refusal is held
+       for the rest of the session for the same reason. */
+    staleTime: (cached) =>
+      isAdminAccessDenied(cached.state.data) ? Infinity : 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
     retry: adminRetry,
   });

@@ -1,15 +1,13 @@
 import { API_BASE_URL } from "../axiosInstance";
+import { HUB_EVENTS, reconnectPolicy } from "./notificationsLifecycle";
 
 export const NOTIFICATIONS_HUB_URL = new URL(
   "hubs/notifications",
   API_BASE_URL
 ).toString();
 
-/** Server-to-client method names, kept in one place rather than inline. */
-export const HUB_EVENTS = {
-  received: "ReceiveNotification",
-  unreadCountChanged: "UnreadCountChanged",
-};
+/** Server-to-client method names — one definition, shared with the lifecycle. */
+export { HUB_EVENTS };
 
 export async function createNotificationsHubConnection() {
   const { HubConnectionBuilder, HttpTransportType, LogLevel } = await import(
@@ -26,8 +24,10 @@ export async function createNotificationsHubConnection() {
       withCredentials: false,
     })
     /* Backing off rather than hammering: a dropped socket on a phone is
-       usually a tunnel or a screen lock, not an outage. */
-    .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+       usually a tunnel or a screen lock, not an outage. The policy never runs
+       out — a fixed list of five delays made SignalR give up for good after
+       about 47 seconds. See `notificationsLifecycle`. */
+    .withAutomaticReconnect(reconnectPolicy)
     .configureLogging(import.meta.env.DEV ? LogLevel.Warning : LogLevel.None)
     .build();
 }

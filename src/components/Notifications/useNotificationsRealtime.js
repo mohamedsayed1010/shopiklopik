@@ -2,16 +2,18 @@ import { useContext, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { AuthContext } from "../../context/AuthContext";
-import {
-  createNotificationsHubConnection,
-  HUB_EVENTS,
-} from "../../api/notifications/notificationsHub";
+import { createNotificationsHubConnection } from "../../api/notifications/notificationsHub";
+import { createNotificationsLifecycle } from "../../api/notifications/notificationsLifecycle";
 import {
   publishNotification,
   publishReconnected,
 } from "../../api/notifications/notificationEvents";
 import { useNotificationsApi } from "./useNotifications";
 
+/* Keeps the notification caches live from the hub. The connection's whole life
+   — retries that never give up, restarts after a close, one set of handlers,
+   duplicate deliveries dropped, one re-read after any gap — is
+   `createNotificationsLifecycle`; this hook only connects it to the caches. */
 export default function useNotificationsRealtime() {
   const queryClient = useQueryClient();
 
@@ -25,77 +27,46 @@ export default function useNotificationsRealtime() {
     // The hub rejects anonymous connections; nothing to subscribe to.
     if (!token) return undefined;
 
-    let cancelled = false;
+    const lifecycle = createNotificationsLifecycle({
+      createConnection: createNotificationsHubConnection,
 
-    let connection = null;
+      onNotification: (notification) => {
+        queryClient.invalidateQueries({ queryKey: listKey });
 
-    const invalidateList = () =>
-      queryClient.invalidateQueries({ queryKey: listKey });
+        /* The count usually arrives on its own event a moment later, but a
+           push that only ever fires `ReceiveNotification` must still move the
+           badge. It is re-read, never incremented, so the two events cannot
+           count one notification twice. */
+        queryClient.invalidateQueries({ queryKey: countKey });
 
-    createNotificationsHubConnection()
-      .then((hub) => {
-        if (cancelled) return undefined;
+        publishNotification(notification);
+      },
 
-        connection = hub;
+      onUnreadCount: (count) => {
+        const cached = queryClient.getQueryData(countKey);
 
-        hub.on(HUB_EVENTS.received, (notification) => {
-          invalidateList();
-
-          /* The count usually arrives on its own event a moment later, but a
-             push that only ever fires `ReceiveNotification` must still move
-             the badge. */
+        if (!cached) {
           queryClient.invalidateQueries({ queryKey: countKey });
 
-          publishNotification(notification);
-        });
+          return;
+        }
 
-        hub.on(HUB_EVENTS.unreadCountChanged, (count) => {
-          if (typeof count !== "number") return;
+        queryClient.setQueryData(countKey, { ...cached, data: count });
+      },
 
-          const cached = queryClient.getQueryData(countKey);
+      /* The socket was down for a while and the hub does not replay: re-read
+         both, and tell every other subscriber to re-read too. */
+      onResync: () => {
+        queryClient.invalidateQueries({ queryKey: listKey });
 
-          if (!cached) {
-            queryClient.invalidateQueries({ queryKey: countKey });
+        queryClient.invalidateQueries({ queryKey: countKey });
 
-            return;
-          }
+        publishReconnected();
+      },
+    });
 
-          queryClient.setQueryData(countKey, {
-            ...cached,
-            data: count,
-          });
-        });
+    lifecycle.start();
 
-        /* A reconnect means the socket was down for a while, and any push sent
-           in that window is simply gone — the hub does not replay. Re-reading
-           both queries is the only way back to the truth. */
-        hub.onreconnected(() => {
-          invalidateList();
-
-          /* Same reasoning for every other subscriber: a push sent while the
-             socket was down is gone, so anything relying on pushes has to
-             re-read rather than wait for one that will never arrive. */
-          queryClient.invalidateQueries({ queryKey: countKey });
-
-          publishReconnected();
-        });
-
-        return hub.start();
-      })
-      .catch(() => {
-      });
-
-    return () => {
-      cancelled = true;
-
-      if (!connection) return;
-
-      connection.off(HUB_EVENTS.received);
-      connection.off(HUB_EVENTS.unreadCountChanged);
-
-      /* `stop()` on a connection still starting rejects; the connection is
-         being thrown away either way. */
-      connection.stop().catch(() => {});
-    };
+    return () => lifecycle.dispose();
   }, [token, queryClient, listKey, countKey]);
 }

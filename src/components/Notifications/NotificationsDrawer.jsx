@@ -5,6 +5,7 @@ import { BellOff, CheckCheck, ChevronLeft, Settings, Trash2 } from "lucide-react
 import useNotifications, { useNotificationsApi } from "./useNotifications";
 import useNotificationTargets from "./useNotificationTargets";
 import NotificationItem from "./NotificationItem";
+import { drawerUnreadCount } from "./notificationState";
 import { isAwaitingReview } from "../../api/notifications/notificationTypes";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import Drawer from "../ui/Drawer";
@@ -50,6 +51,7 @@ export default function NotificationsDrawer({ isOpen, onClose }) {
 
   const {
     notificationsQuery,
+    unreadCountQuery,
     markAllAsReadMutation,
     deleteAllNotificationsMutation,
   } = useNotifications({
@@ -73,7 +75,13 @@ export default function NotificationsDrawer({ isOpen, onClose }) {
       }
     : targetForUser;
 
-  const unreadCount = notifications.filter((item) => !item.isRead).length;
+  /* The server's count — the very number the bell shows. Counting the loaded
+     rows instead said "4 غير مقروء" under a badge of 24, because the drawer
+     loads one page. The rows are only the fallback while the count is unknown. */
+  const unreadCount = drawerUnreadCount(
+    unreadCountQuery.data?.data,
+    notifications
+  );
 
   const groups = useMemo(() => groupByRecency(notifications), [notifications]);
 

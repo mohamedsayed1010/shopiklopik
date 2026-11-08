@@ -2,10 +2,6 @@ import { useCallback, useMemo } from "react";
 
 import useListingRoutes from "../../hooks/useListingRoutes";
 import { readNotification } from "./notificationTarget";
-import {
-  isAwaitingReview,
-  isEditedAwaitingReview,
-} from "../../api/notifications/notificationTypes";
 
 export default function useNotificationTargets(notifications = []) {
   // Read the whole list once; both the hint set and the lookup reuse it.
@@ -17,26 +13,32 @@ export default function useNotificationTargets(notifications = []) {
   const hints = useMemo(() => {
     const seen = new Set();
 
+    /* One hint per notification — see `primaryHint`. Handing every alias over
+       made any unplaceable one ("advertisements", "LostFoundPost") trigger a
+       read-config request for every category in the catalogue. */
     parsed.forEach((entry) => {
-      if (entry.pair) return;
+      if (entry.pair || entry.kind !== "listing") return;
 
-      (entry.moduleHints ?? []).forEach((hint) => seen.add(hint));
+      if (entry.primaryHint) seen.add(entry.primaryHint);
     });
 
     return [...seen];
   }, [parsed]);
 
-  const { resolve, resolveByEndpoint, isResolving } = useListingRoutes(hints);
+  /* A destination needs a pair, not a config: read-configs are fetched only
+     for what the metadata cannot place (car notifications). */
+  const { resolve, resolveByEndpoint, isResolving } = useListingRoutes(hints, {
+    fetchConfigs: "unplaced",
+  });
 
   const targetFor = useCallback(
     (notification) => {
-      if (isAwaitingReview(notification)) return null;
-
-      /* An edit returns a published listing to moderation, and the public read
-         withholds it exactly as it does a new submission — same outcome, same
-         handling. See `isEditedAwaitingReview`. */
-      if (isEditedAwaitingReview(notification)) return null;
-
+      /* Submitted and edited listings are in review, and the public read
+         withholds them — but this is the user's own inbox, and these
+         notifications go only to the listing's owner, whom the module's details
+         endpoint does serve while the listing is pending (verified in
+         production on all 18 listing types, 2026-11-08). So they open the
+         listing like any other; anyone else still gets the API's 404. */
       const entry = readNotification(notification);
 
       if (entry.kind === "app") return entry.to;

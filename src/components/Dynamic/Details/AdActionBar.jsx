@@ -5,6 +5,11 @@ import { Heart, Link2, MessageCircle, Share2 } from "lucide-react";
 import LikeButton from "../Interactions/LikeButton";
 import useFavorite from "../../../hooks/useFavorite";
 import { formatNumber } from "../../../utils/format";
+import {
+  listingShareUrl,
+  shareFeedback,
+  shareListing,
+} from "../../../utils/shareListing";
 
 /** Desktop browsers have no share sheet — the icon should say so. */
 function canShareNatively() {
@@ -59,6 +64,10 @@ export default function AdActionBar({
   favoriteCount = null,
   isLoadingFavorite = false,
   canFavorite = true,
+  /** False for the owner's pending listing: the API answers that save 404. */
+  showFavorite = true,
+  /** False for the owner's pending listing: nobody else can open its address. */
+  showShare = true,
   categoryId = null,
   subCategoryId = null,
   moduleType = null,
@@ -95,26 +104,17 @@ export default function AdActionBar({
     );
   }, [toggle]);
 
+  /* The listing's own address (no page state), the native sheet where there is
+     one, the clipboard otherwise — see `utils/shareListing`. A dismissed sheet
+     says nothing; a failed copy says so. */
   const share = useCallback(async () => {
-    const url = window.location.href;
+    const outcome = await shareListing({ url: listingShareUrl(window.location), title });
 
-    // The native sheet is the better experience where it exists (phones);
-    // the clipboard is the honest fallback everywhere else.
-    if (canShareNatively()) {
-      try {
-        await navigator.share({ title, url });
-        return;
-      } catch (error) {
-        if (error?.name === "AbortError") return;
-      }
-    }
+    const feedback = shareFeedback(outcome);
 
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success("تم نسخ رابط الإعلان");
-    } catch {
-      toast.error("تعذّرت مشاركة الرابط");
-    }
+    if (feedback?.kind === "success") toast.success(feedback.text);
+
+    if (feedback?.kind === "error") toast.error(feedback.text);
   }, [title]);
 
   return (
@@ -144,20 +144,24 @@ export default function AdActionBar({
       {/* Until the server has reported this ad's favourite state, the button
           says nothing about it: a heart drawn empty during that gap is a claim
           the client cannot yet make. */}
-      <ActionButton
-        icon={Heart}
-        label={
-          isLoadingFavorite ? "المفضلة" : isSaved ? "في المفضلة" : "حفظ"
-        }
-        count={isLoadingFavorite ? null : count}
-        active={!isLoadingFavorite && isSaved}
-        pending={isLoadingFavorite}
-        activeClass="text-red-600"
-        disabled={isPending || isLoadingFavorite || !canToggle || !canFavorite}
-        onClick={toggleSave}
-      />
+      {showFavorite && (
+        <ActionButton
+          icon={Heart}
+          label={
+            isLoadingFavorite ? "المفضلة" : isSaved ? "في المفضلة" : "حفظ"
+          }
+          count={isLoadingFavorite ? null : count}
+          active={!isLoadingFavorite && isSaved}
+          pending={isLoadingFavorite}
+          activeClass="text-red-600"
+          disabled={isPending || isLoadingFavorite || !canToggle || !canFavorite}
+          onClick={toggleSave}
+        />
+      )}
 
-      <ActionButton icon={canShareNatively() ? Share2 : Link2} label="مشاركة" onClick={share} />
+      {showShare && (
+        <ActionButton icon={canShareNatively() ? Share2 : Link2} label="مشاركة" onClick={share} />
+      )}
     </div>
   );
 }

@@ -17,6 +17,13 @@ import {
 } from "../../api/admin/notifications/adminNotificationsEndpoints";
 import { AuthContext } from "../../context/AuthContext";
 import { apiError, apiMessage } from "../../pages/Profile/profileCache";
+import {
+  countAfterReadingAll,
+  countAfterReadingOne,
+  markAllReadInList,
+  markOneReadInList,
+  wasUnreadInLists,
+} from "./notificationState";
 
 export const NOTIFICATIONS_QUERY_KEY = ["notifications"];
 
@@ -73,42 +80,37 @@ export function useNotificationActions() {
 
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: api.listKey });
+      await queryClient.cancelQueries({ queryKey: api.countKey });
 
       const previous = queryClient.getQueriesData({
         queryKey: api.listKey,
       });
 
-      queryClient.setQueriesData({ queryKey: api.listKey }, (response) => {
-        const items = response?.data?.items;
+      const previousCount = queryClient.getQueryData(api.countKey);
 
-        if (!Array.isArray(items)) return response;
+      /* The badge only moves if this row was unread in what the user sees, so
+         a repeated click cannot take it down twice. */
+      const wasUnread = wasUnreadInLists(previous, id);
 
-        return {
-          ...response,
-          data: {
-            ...response.data,
-            items: items.map((item) =>
-              item.id === id ? { ...item, isRead: true } : item
-            ),
-          },
-        };
-      });
+      queryClient.setQueriesData({ queryKey: api.listKey }, (response) =>
+        markOneReadInList(response, id)
+      );
 
-      queryClient.setQueryData(api.countKey, (response) => {
-        const count = response?.data;
+      queryClient.setQueryData(api.countKey, (response) =>
+        countAfterReadingOne(response, wasUnread)
+      );
 
-        if (typeof count !== "number") return response;
-
-        return { ...response, data: Math.max(0, count - 1) };
-      });
-
-      return { previous };
+      return { previous, previousCount };
     },
 
     onError: (error, _id, context) => {
       context?.previous?.forEach(([key, value]) =>
         queryClient.setQueryData(key, value)
       );
+
+      if (context && "previousCount" in context) {
+        queryClient.setQueryData(api.countKey, context.previousCount);
+      }
 
       toast.error(apiError(error, "تعذّر تحديث الإشعار"));
     },
@@ -118,18 +120,44 @@ export function useNotificationActions() {
     onSettled: refresh,
   });
 
+  /* Optimistic like a single read: the rows and the badge agree the moment the
+     button is pressed, are put back if the server refuses, and are re-read from
+     the server either way. */
   const markAllAsReadMutation = useMutation({
-    mutationFn: api.markAllRead,
+    mutationFn: () => api.markAllRead(),
+
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: api.listKey });
+      await queryClient.cancelQueries({ queryKey: api.countKey });
+
+      const previous = queryClient.getQueriesData({ queryKey: api.listKey });
+
+      const previousCount = queryClient.getQueryData(api.countKey);
+
+      queryClient.setQueriesData({ queryKey: api.listKey }, markAllReadInList);
+
+      queryClient.setQueryData(api.countKey, countAfterReadingAll);
+
+      return { previous, previousCount };
+    },
 
     onSuccess: (response) => {
       toast.success(apiMessage(response, "تم تحديد كل الإشعارات كمقروءة"));
-
-      refresh();
     },
 
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      context?.previous?.forEach(([key, value]) =>
+        queryClient.setQueryData(key, value)
+      );
+
+      if (context && "previousCount" in context) {
+        queryClient.setQueryData(api.countKey, context.previousCount);
+      }
+
       toast.error(apiError(error, "تعذّر تحديث الإشعارات"));
     },
+
+    onSettled: refresh,
   });
 
   const deleteNotificationMutation = useMutation({

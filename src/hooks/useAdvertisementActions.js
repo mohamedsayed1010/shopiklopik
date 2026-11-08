@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getAdvertisementActions } from "../api/advertisements/interactions";
 import useListingModuleType from "./useListingModuleType";
+import { retryUnlessClientError } from "../utils/queryRetry";
 
 export const ADVERTISEMENT_ACTIONS_KEY = "advertisement-actions";
 
@@ -41,7 +42,10 @@ export default function useAdvertisementActions({
 
     gcTime: 1000 * 60 * 10,
 
-    retry: 1,
+    /* A 404 here is final — a listing still under review answers it even to
+       its owner — so it is not asked twice. Network errors and 5xx keep their
+       one retry. */
+    retry: retryUnlessClientError(1),
 
     refetchOnWindowFocus: false,
   });

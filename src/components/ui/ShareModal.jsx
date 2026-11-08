@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa6";
 
 import Modal from "./Modal";
+import { writeToClipboard } from "../../utils/clipboard";
 
 /** Facebook's web share dialog needs an app id; the sharer does not. */
 const TARGETS = [
@@ -68,37 +69,6 @@ export function canShareNatively() {
   );
 }
 
-/** Clipboard API is https-only; the textarea trick covers the rest. */
-async function writeToClipboard(text) {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    /* fall through to the legacy path */
-  }
-
-  try {
-    const field = document.createElement("textarea");
-
-    field.value = text;
-    field.setAttribute("readonly", "");
-    field.style.position = "fixed";
-    field.style.opacity = "0";
-
-    document.body.appendChild(field);
-    field.select();
-
-    const copied = document.execCommand("copy");
-
-    document.body.removeChild(field);
-
-    return copied;
-  } catch {
-    return false;
-  }
-}
 
 function TargetButton({ target, url, title, onDone }) {
   const { Icon } = target;

@@ -1,5 +1,7 @@
-import { useMemo } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { canonicalDetailsPath } from "../../utils/detailsRoute";
+import useListingOwnerStatus from "../../hooks/useListingOwnerStatus";
 import Seo from "../../components/Seo";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
 import { listingDescription, listingTitle } from "../../seo/descriptions";
@@ -61,9 +63,23 @@ function MarketplaceDetailsPage() {
 
   const { item, isLoading, isError, refetch } = useDynamicDetails(endpoint);
 
+  /* A link that could only name the module — a car notification lands on the
+     first car sub-category — is moved to the pair the record itself reports.
+     `replace`, so Back does not return to the imprecise address. */
+  const location = useLocation();
+
+  const canonicalPath = useMemo(
+    () => canonicalDetailsPath({ categoryId, subCategoryId, id }, item, location),
+    [categoryId, subCategoryId, id, item, location]
+  );
+
+  useEffect(() => {
+    if (canonicalPath) navigate(canonicalPath, { replace: true });
+  }, [canonicalPath, navigate]);
+
   const { options } = useDynamicOptions(config, item);
 
-  const { schema } = useAdSchema(
+  const { schema, form } = useAdSchema(
     Number(categoryId),
     Number(subCategoryId),
     config
@@ -72,10 +88,19 @@ function MarketplaceDetailsPage() {
   const { type: moduleType, isResolved: isModuleTypeResolved } =
     useListingModuleType(Number(categoryId), Number(subCategoryId));
 
+  /* The owner's own pending listing: the server's moderation status, and
+     whether the published-only interactions apply. */
+  const ownerStatus = useListingOwnerStatus({
+    record: item,
+    paymentLookup: form?.payment ?? null,
+    moduleType,
+  });
+
   const { totalViews } = useAdvertisementView({
     id: item ? item.id ?? id : null,
     type: moduleType,
-    enabled: isModuleTypeResolved,
+    // A pending listing's view is answered 404; it is not asked.
+    enabled: isModuleTypeResolved && ownerStatus.askInteractions,
   });
 
   const categoryName = config?.category?.nameAr ?? config?.category?.name;
@@ -207,6 +232,7 @@ function MarketplaceDetailsPage() {
               endpoint={endpoint}
               options={options}
               schema={schema}
+              ownerStatus={ownerStatus}
               views={totalViews}
             />
           )}

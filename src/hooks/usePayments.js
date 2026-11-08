@@ -10,6 +10,7 @@ import {
   getPaymentScreenshot,
 } from "../api/payments/payments";
 import { apiError, apiMessage } from "../pages/Profile/profileCache";
+import { normalizePaymentStatus } from "../utils/paymentFilters";
 
 export const PAYMENT_METHODS_KEY = ["payment-methods"];
 
@@ -17,9 +18,11 @@ export const MY_PAYMENTS_ROOT = ["my-payments"];
 
 export const MY_PAYMENTS_LIST_ROOT = [...MY_PAYMENTS_ROOT, "list"];
 
+/* `""`, an omitted status and `"all"` are one request (no `status` parameter),
+   so they are one key; `"2"` and `2` are one filter. See `paymentFilters`. */
 export const myPaymentsKey = (status) => [
   ...MY_PAYMENTS_LIST_ROOT,
-  status ?? "all",
+  normalizePaymentStatus(status) ?? "all",
 ];
 
 export const paymentDetailsKey = (id) => [

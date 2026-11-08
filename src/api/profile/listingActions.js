@@ -19,6 +19,26 @@ export async function updateListing(endpoint, body) {
   return response.data;
 }
 
+/** Add photos to a listing whose update cannot carry files — see `utils/listingImages`. */
+export async function addListingImages(endpoint, files, field = "Images") {
+  const formData = new FormData();
+
+  files.forEach((file) => formData.append(field, file));
+
+  const response = await axiosInstance.post(endpoint, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+  return response.data;
+}
+
+/** Remove one photo by its server id — see `utils/listingImages`. */
+export async function deleteListingImage(endpoint) {
+  const response = await axiosInstance.delete(endpoint);
+
+  return response.data;
+}
+
 /** The owner's republish, for any listing type. Deliberately sent with no body;
     see `ownerRepublishRequest`. */
 export async function republishListing(listing) {

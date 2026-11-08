@@ -10,30 +10,47 @@ import { reportAdvertisement } from "../../../api/advertisements/interactions";
 import { useReportReasons } from "../../../hooks/useListingModuleType";
 import { advertisementActionsKey } from "../../../hooks/useAdvertisementActions";
 import { apiError, apiMessage } from "../../../pages/Profile/profileCache";
+import CharacterCounter from "../../ui/CharacterCounter";
+import {
+  REPORT_DETAILS_MAX_LENGTH,
+  selectedReportReason,
+  validateReportDetails,
+} from "../../../utils/interactionLimits";
 
-export default function ReportModal({ open, onClose, adId, type, adTitle }) {
+export default function ReportModal({ open, onClose, adId, type, adTitle, isOwner = false }) {
   const queryClient = useQueryClient();
 
   const { reasons, isLoading: isLoadingReasons, isError: hasReasonsError, refetch } =
     useReportReasons();
 
-  /* `null` means "the reporter has not chosen yet", which resolves to the first
-     published reason. Derived rather than written into state on arrival, so the
-     list can load after the modal opens without an effect racing the render. */
+  /* `null` means "the reporter has not chosen yet" — and stays that way until
+     they do. A pre-selected first reason let one click file a report the
+     reader never chose. */
   const [picked, setPicked] = useState(null);
 
   const [note, setNote] = useState("");
 
-  const reason =
-    picked !== null && reasons.some((item) => Number(item.id) === picked)
-      ? picked
-      : reasons.length > 0
-        ? Number(reasons[0].id)
-        : null;
+  const reason = selectedReportReason(picked, reasons);
+
+  const details = validateReportDetails(note);
 
   const mutation = useMutation({
-    mutationFn: () =>
-      reportAdvertisement(adId, { type, reason, details: note.trim() }),
+    mutationFn: () => {
+      /* The last line of the "not on your own listing" rule: whatever opened
+         this form, the request is never sent for the owner. The server still
+         authorises reports on its own. */
+      if (isOwner) {
+        return Promise.reject(new Error("لا يمكنك الإبلاغ عن إعلانك."));
+      }
+
+      if (reason === null) {
+        return Promise.reject(new Error("اختر سبب البلاغ."));
+      }
+
+      if (details.error) return Promise.reject(new Error(details.error));
+
+      return reportAdvertisement(adId, { type, reason, details: details.value });
+    },
 
     onSuccess: (response) => {
       const adKey = advertisementActionsKey(adId, type).slice(0, 2);
@@ -63,13 +80,24 @@ export default function ReportModal({ open, onClose, adId, type, adTitle }) {
     },
   });
 
+  /* Reopening starts unchosen again; what was typed in the details is kept. */
+  const close = () => {
+    setPicked(null);
+
+    onClose?.();
+  };
+
   const canSubmit =
-    Boolean(adId) && Number.isFinite(Number(reason)) && !mutation.isPending;
+    Boolean(adId) &&
+    !isOwner &&
+    reason !== null &&
+    !details.error &&
+    !mutation.isPending;
 
   return (
     <Modal
       open={open}
-      onClose={mutation.isPending ? undefined : onClose}
+      onClose={mutation.isPending ? undefined : close}
       title="الإبلاغ عن هذا الإعلان"
       description={
         adTitle
@@ -83,7 +111,7 @@ export default function ReportModal({ open, onClose, adId, type, adTitle }) {
             variant="outline"
             fullWidth
             disabled={mutation.isPending}
-            onClick={onClose}
+            onClick={close}
           >
             إلغاء
           </Button>
@@ -106,6 +134,12 @@ export default function ReportModal({ open, onClose, adId, type, adTitle }) {
           <AlertTriangle size={16} className="text-red-500" />
           ما سبب البلاغ؟
         </legend>
+
+        {reasons.length > 0 && reason === null && (
+          <p className="-mt-1 mb-1 text-[12.5px] font-medium text-muted">
+            اختر سبب البلاغ
+          </p>
+        )}
 
         {isLoadingReasons && (
           <p className="py-2 text-sm text-muted">جارٍ تحميل أسباب البلاغ…</p>
@@ -177,9 +211,29 @@ export default function ReportModal({ open, onClose, adId, type, adTitle }) {
           disabled={mutation.isPending}
           onChange={(event) => setNote(event.target.value)}
           placeholder="اشرح المشكلة باختصار"
+          maxLength={REPORT_DETAILS_MAX_LENGTH}
+          aria-describedby="report-details-length"
+          aria-invalid={Boolean(details.error) || undefined}
           className={`${inputBase} ${inputIdle} resize-y py-3 leading-7 disabled:opacity-60`}
         />
       </label>
+
+      <div className="mt-1.5 flex items-start justify-between gap-3">
+        {details.error ? (
+          <p role="alert" className="text-xs font-medium text-red-600">
+            {details.error}
+          </p>
+        ) : (
+          <span />
+        )}
+
+        <CharacterCounter
+          id="report-details-length"
+          text={note}
+          max={REPORT_DETAILS_MAX_LENGTH}
+          className="shrink-0"
+        />
+      </div>
     </Modal>
   );
 }
